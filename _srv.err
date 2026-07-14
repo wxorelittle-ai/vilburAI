@@ -1,9 +1,0 @@
-[14/Jul/2026 21:21:01] "GET /login/ HTTP/1.1" 200 11272
-[14/Jul/2026 21:21:28] "GET /login/ HTTP/1.1" 200 11272
-[14/Jul/2026 21:21:28] "GET /static/js/app.js HTTP/1.1" 200 3985
-[14/Jul/2026 21:21:29] "GET /sw.js HTTP/1.1" 200 2099
-[14/Jul/2026 21:21:29] "GET /offline/ HTTP/1.1" 200 4143
-[14/Jul/2026 21:21:29] "GET /static/js/offline-calc.js HTTP/1.1" 200 2069
-[14/Jul/2026 21:21:29] "GET /static/icons/icon-192.png HTTP/1.1" 200 1959
-Not Found: /favicon.ico
-[14/Jul/2026 21:21:29] "GET /favicon.ico HTTP/1.1" 404 4442
