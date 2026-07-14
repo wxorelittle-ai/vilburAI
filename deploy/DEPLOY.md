@@ -11,14 +11,31 @@ Yandex Cloud / Timeweb, Ubuntu 22.04 LTS, PostgreSQL 15+, Gunicorn + Nginx.
 - **Хостинг только в РФ** (Yandex Cloud / Timeweb) — требование раздела 16 ТЗ по 152-ФЗ;
   Oracle Cloud, AWS, Google Cloud исключены
 
-## 2. Быстрый старт (автоматический скрипт)
+## 2. Быстрый старт — деплой в ОДНУ команду (рекомендуется)
 
 ```bash
-# На сервере, от root:
+# На сервере, от root (Ubuntu 22.04/24.04/26.04):
+git clone <repo-url> /opt/brigadir_pro
+sudo DOMAIN=ваш-домен.ru EMAIL=почта@для-ssl.ru bash /opt/brigadir_pro/deploy/bootstrap.sh
+```
+
+`deploy/bootstrap.sh` неинтерактивно ставит пакеты и зависимости сборки, создаёт БД
+PostgreSQL (с правами схемы `public` для PG15+), виртуальное окружение, `.env` с
+автогенерацией `SECRET_KEY`, применяет миграции, собирает статику, поднимает Gunicorn
+(systemd), Nginx и выпускает SSL (Let's Encrypt). Идемпотентно — можно перезапускать.
+
+Предварительно направьте A-записи домена (`@` и `www`) на IP сервера — иначе SSL не
+выпустится (скрипт подскажет команду для повторного выпуска сертификата).
+
+<details>
+<summary>Альтернатива: пошаговый интерактивный скрипт</summary>
+
+```bash
 git clone <repo-url> /tmp/brigadir_pro_src
 cd /tmp/brigadir_pro_src
 sudo ./deploy/setup_server.sh
 ```
+</details>
 
 Скрипт `deploy/setup_server.sh` последовательно:
 1. Ставит системные пакеты (Python 3.12, PostgreSQL, Nginx, certbot)
