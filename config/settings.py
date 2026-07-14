@@ -1,5 +1,5 @@
 """
-Django settings for Бригадир.Про
+Django settings for Вильбур AI
 
 Все чувствительные параметры берутся из переменных окружения (.env).
 См. .env.example — полный список переменных.
@@ -28,7 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # Бригадир.Про — приложения по модулям ТЗ
+    # Вильбур AI — приложения по модулям ТЗ
     'core.apps.CoreConfig',            # Пользователи, Brigada (Этап 1)
     'documents.apps.DocumentsConfig',  # Модуль A — генератор документов
     'calculator.apps.CalculatorConfig',  # Модуль C — калькулятор себестоимости
@@ -131,7 +131,7 @@ EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@brigadir.pro')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@wilbur.ai')
 
 # --- ЮKassa (Модуль тарифов/оплаты) ---------------------------------------------
 
@@ -162,7 +162,7 @@ KONTUR_API_KEY = config('KONTUR_API_KEY', default='')
 # Без ключей — демо. WhatsApp — через Wazzup; Telegram-бот — long-polling.
 WHATSAPP_API_KEY = config('WHATSAPP_API_KEY', default='')
 TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN', default='')
-TELEGRAM_BOT_USERNAME = config('TELEGRAM_BOT_USERNAME', default='brigadirpro_bot')
+TELEGRAM_BOT_USERNAME = config('TELEGRAM_BOT_USERNAME', default='wilbur_ai_bot')
 
 # --- Безопасность в проде (включается через .env при DEBUG=False) --------------
 

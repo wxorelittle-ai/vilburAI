@@ -25,7 +25,7 @@ def otpravit_kod(telefon: str, kod: str):
             params={
                 'api_id': settings.SMS_API_KEY,
                 'to': telefon,
-                'msg': f'Бригадир.Про: код подписания {kod}',
+                'msg': f'Вильбур AI: код подписания {kod}',
                 'json': 1,
             },
             timeout=15,

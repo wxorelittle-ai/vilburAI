@@ -1,5 +1,5 @@
 """
-Десктоп-лончер Бригадир.Про.
+Десктоп-лончер Вильбур AI.
 
 Что делает:
 1. Готовит .env (копирует из .env.example и генерирует SECRET_KEY при первом запуске).
@@ -39,7 +39,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 os.chdir(BASE_DIR)
 
-APP_TITLE = 'Бригадир.Про'
+APP_TITLE = 'Вильбур AI'
 
 
 def ensure_env_file():
@@ -125,7 +125,7 @@ def main():
     if 'error' in error_holder:
         raise error_holder['error']
 
-    print(f'Бригадир.Про запущен: {url}')
+    print(f'Вильбур AI запущен: {url}')
 
     try:
         import webview

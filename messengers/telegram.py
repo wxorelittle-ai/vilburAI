@@ -16,7 +16,7 @@ def is_configured() -> bool:
 
 
 def bot_username() -> str:
-    return getattr(settings, 'TELEGRAM_BOT_USERNAME', '') or 'brigadirpro_bot'
+    return getattr(settings, 'TELEGRAM_BOT_USERNAME', '') or 'wilbur_ai_bot'
 
 
 def _call(method, payload):
@@ -86,13 +86,13 @@ def process_update(update: dict):
             send_message(chat_id, f'✅ Telegram привязан к «{tg.brigada.nazvanie}». '
                                   f'Команды: /dokumenty /raschet /smeta /nalogi')
         else:
-            send_message(chat_id, 'Чтобы привязать аккаунт, откройте в Бригадир.Про раздел '
+            send_message(chat_id, 'Чтобы привязать аккаунт, откройте в Вильбур AI раздел '
                                   '«Мессенджеры» и перейдите по кнопке подключения Telegram.')
         return
 
     tg = TelegramUser.objects.filter(telegram_id=chat_id, status=TelegramUser.STATUS_SVYAZAN).first()
     if not tg:
-        send_message(chat_id, 'Аккаунт не привязан. Откройте раздел «Мессенджеры» в Бригадир.Про.')
+        send_message(chat_id, 'Аккаунт не привязан. Откройте раздел «Мессенджеры» в Вильбур AI.')
         return
 
     otvet = _svodka(tg.brigada, text.split('@')[0])

@@ -5,13 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#262421">
-    <title>{% block title %}Бригадир.Про{% endblock %}</title>
+    <title>{% block title %}Вильбур AI{% endblock %}</title>
 
     <!-- PWA (раздел 7.5 ТЗ) -->
     <link rel="manifest" href="{% url 'manifest' %}">
+    <link rel="icon" type="image/png" href="{% static 'icons/favicon.png' %}">
     <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="Бригадир">
+    <meta name="apple-mobile-web-app-title" content="Вильбур AI">
     <!-- Ранняя инициализация темы — до отрисовки, чтобы не мигало -->
     <script>(function(){try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 
@@ -32,7 +33,7 @@
                         display: ['Manrope', 'Inter', 'sans-serif'],
                     },
                     colors: {
-                        // Фирменная палитра Бригадир.Про
+                        // Фирменная палитра Вильбур AI
                         grafit:  '#262421',
                         terracotta: '#C1502E',
                         sand:    '#F3EDE4',
@@ -137,9 +138,9 @@
     <nav class="bg-grafit text-white sticky top-0 z-40 shadow-lift">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
             <a href="{% url 'core:landing' %}" class="flex items-center gap-2.5 shrink-0">
-                <span class="brandmark">Б</span>
+                <img src="{% static 'img/wilbur-horse-white.png' %}" alt="Вильбур" class="h-9 w-auto">
                 <span class="text-lg font-display font-extrabold tracking-tight">
-                    Бригадир<span class="text-amber">.Про</span>
+                    Вильбур<span class="text-amber"> AI</span>
                 </span>
             </a>
 
@@ -200,8 +201,8 @@
     <footer class="mt-20 border-t border-sand-deep bg-grafit text-white/60">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
             <div class="flex items-center gap-2.5">
-                <span class="brandmark" style="width:28px;height:28px;font-size:13px;">Б</span>
-                <span class="font-display font-bold text-white/90">Бригадир<span class="text-amber">.Про</span></span>
+                <img src="{% static 'img/wilbur-horse-white.png' %}" alt="Вильбур" class="h-7 w-auto opacity-90">
+                <span class="font-display font-bold text-white/90">Вильбур<span class="text-amber"> AI</span></span>
             </div>
             <p>© {% now "Y" %} — защити свою бригаду: договоры, сметы, расчёты за 3 минуты с телефона</p>
         </div>

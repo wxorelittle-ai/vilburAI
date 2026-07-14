@@ -1,4 +1,4 @@
-# Бригадир.Про — запуск через Docker
+# Вильбур AI — запуск через Docker
 
 Самый надёжный способ запустить приложение, если на компьютере VPN/прокси
 (V2Ray, Clash, Shadowsocks и т.п.) мешает обычной установке через `pip`
@@ -26,7 +26,7 @@ docker compose up --build
 зависимостей внутри контейнера). В консоли должна появиться строка:
 
 ```
-Starting Brigadir.Pro on http://0.0.0.0:8000/
+Starting wilbur.ai on http://0.0.0.0:8000/
 ...
 Starting development server at http://0.0.0.0:8000/
 ```

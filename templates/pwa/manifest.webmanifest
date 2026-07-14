@@ -1,6 +1,6 @@
 {% load static %}{
-  "name": "Бригадир.Про",
-  "short_name": "Бригадир",
+  "name": "Вильбур AI",
+  "short_name": "Вильбур AI",
   "description": "Договоры, сметы, расчёты и контроль объектов для строительных бригад",
   "start_url": "/dashboard/",
   "scope": "/",

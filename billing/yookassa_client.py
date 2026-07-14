@@ -41,7 +41,7 @@ def create_payment(brigada, tarif: str, summa, return_url: str):
         'amount': {'value': f'{summa:.2f}', 'currency': 'RUB'},
         'confirmation': {'type': 'redirect', 'return_url': return_url},
         'capture': True,
-        'description': f'Бригадир.Про — тариф «{tarif}» для {brigada.nazvanie}',
+        'description': f'Вильбур AI — тариф «{tarif}» для {brigada.nazvanie}',
         'metadata': {'brigada_id': brigada.pk, 'tarif': tarif},
     }, uuid.uuid4())
 

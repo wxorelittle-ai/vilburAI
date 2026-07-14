@@ -30,7 +30,7 @@ def register(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success(request, 'Добро пожаловать в Бригадир.Про! Создайте свой первый договор бесплатно.')
+            messages.success(request, 'Добро пожаловать в Вильбур AI! Создайте свой первый договор бесплатно.')
             return redirect('core:dashboard')
     else:
         form = RegistrationForm()

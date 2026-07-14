@@ -1,4 +1,4 @@
-{% load static %}// Service Worker Бригадир.Про (раздел 7.5 ТЗ)
+{% load static %}// Service Worker Вильбур AI (раздел 7.5 ТЗ)
 const VERSION = 'brigadir-v1';
 const STATIC_CACHE = VERSION + '-static';
 const RUNTIME_CACHE = VERSION + '-runtime';
