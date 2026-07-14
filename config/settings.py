@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'billing.apps.BillingConfig',      # Тарифы, ЮKassa, LimitTracker
     'objekty.apps.ObjektyConfig',      # Модуль J — контроль объектов + AI-ассистент (Addendum №2)
     'podpis.apps.PodpisConfig',        # Модуль I — простая электронная подпись (ПЭП)
+    'fotoakty.apps.FotoaktyConfig',    # Модуль G — фото-акты с геолокацией
 ]
 
 MIDDLEWARE = [

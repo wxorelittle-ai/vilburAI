@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Фотофиксация — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+    <h1 class="font-display text-3xl font-bold text-grafit mb-1">Фотофиксация объектов</h1>
+    <p class="text-sm text-steel mb-8">Фото с датой, адресом и геометкой — по актам приёмки этапов.</p>
+
+    {% if dokumenty %}
+    <div class="space-y-8">
+        {% for d in dokumenty %}
+        <section class="bg-white border border-sand-deep rounded-2xl shadow-card p-5">
+            <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <div>
+                    <a href="{% url 'documents:detail' d.pk %}" class="font-display font-bold text-grafit hover:text-terracotta">{{ d.etap_nazvanie|default:d.get_tip_display }}</a>
+                    <p class="text-xs text-steel">{{ d.adres_obekta }} · акт №{{ d.nomer }} · {{ d.data_sozdaniya|date:"d.m.Y" }}</p>
+                </div>
+                <span class="text-xs font-semibold text-steel bg-sand-deep rounded-full px-3 py-1">{{ d.fotoakty.count }} фото</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {% for f in d.fotoakty.all %}
+                <div class="rounded-xl overflow-hidden border border-sand-deep bg-sand">
+                    <img src="{{ f.foto_file.url }}" alt="фото" class="w-full h-32 object-cover">
+                    {% if f.est_geo %}
+                    <a href="{{ f.geo_ssylka }}" target="_blank" class="block text-[11px] text-terracotta hover:text-accent-dark px-2 py-1 truncate">📍 на карте</a>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="rounded-2xl bg-white border border-sand-deep p-10 text-center shadow-card">
+        <p class="text-steel mb-2">Пока нет фотофиксации.</p>
+        <p class="text-sm text-steel/80">Откройте акт приёмки этапа и приложите фото — они попадут в PDF и сюда, в галерею.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

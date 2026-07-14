@@ -58,6 +58,48 @@
     </div>
     {% endwith %}
 
+    {% if d.tip == 'akt_priemki' %}
+    <div class="rounded-2xl border border-sand-deep bg-white p-5 mb-6 shadow-card">
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <p class="font-display font-bold text-grafit">Фотофиксация ({{ d.fotoakty.count }}/10)</p>
+            <a href="{% url 'fotoakty:galereya' %}" class="text-sm text-terracotta hover:text-accent-dark font-semibold">Вся галерея →</a>
+        </div>
+
+        {% if d.fotoakty.all %}
+        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
+            {% for f in d.fotoakty.all %}
+            <div class="relative rounded-lg overflow-hidden border border-sand-deep group">
+                <img src="{{ f.foto_file.url }}" class="w-full h-24 object-cover">
+                {% if f.est_geo %}<span class="absolute top-1 left-1 text-[10px] bg-grafit/70 text-white px-1 rounded">📍</span>{% endif %}
+                <form method="post" action="{% url 'fotoakty:delete' f.pk %}" class="absolute top-1 right-1">
+                    {% csrf_token %}
+                    <button type="submit" onclick="return confirm('Удалить фото?')" class="text-[10px] bg-terracotta text-white rounded px-1.5 py-0.5">✕</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if current_brigada.effective_tarif == 'start' %}
+        <a href="{% url 'billing:plans' %}" class="text-sm text-steel">Загрузка фото — с тарифа «Самозанятый». <span class="text-terracotta font-semibold">Выбрать тариф →</span></a>
+        {% elif d.fotoakty.count < 10 %}
+        <form method="post" action="{% url 'fotoakty:upload' d.pk %}" enctype="multipart/form-data" class="flex flex-wrap items-end gap-2">
+            {% csrf_token %}
+            <div class="flex-1 min-w-[180px]">
+                <label class="block text-xs text-steel mb-1">Фото (до 10, водяной знак и геометка добавятся автоматически)</label>
+                <input type="file" name="foto" accept="image/*" multiple capture="environment"
+                       class="w-full text-sm text-grafit border border-sand-deep rounded-lg px-3 py-2 bg-sand/40">
+            </div>
+            <input type="text" name="podpis" placeholder="Подпись под фото (необязательно)"
+                   class="text-sm border border-sand-deep rounded-lg px-3 py-2 bg-sand/40 text-grafit min-w-[180px]">
+            <button type="submit" class="bg-grafit hover:bg-grafit-700 transition text-white font-semibold px-5 py-2.5 rounded-lg text-sm">Загрузить</button>
+        </form>
+        {% else %}
+        <p class="text-sm text-steel">Достигнут лимит 10 фото на акт.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
     {% if d.pdf_file %}
     <div class="rounded-2xl border border-sand-deep overflow-hidden bg-white" style="height: 80vh;">
         <iframe src="{% url 'documents:download' d.pk %}" class="w-full h-full" style="border:0;"></iframe>

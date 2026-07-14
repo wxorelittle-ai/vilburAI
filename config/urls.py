@@ -18,6 +18,7 @@ urlpatterns = [
     path('smety/', include('smety.urls')),
     path('objekty/', include('objekty.urls')),
     path('billing/', include('billing.urls')),
+    path('fotoakty/', include('fotoakty.urls')),
     path('', include('podpis.urls')),  # /sign/<token>/ (публично) и /podpis/document/<pk>/
     path('s/<slug:slug>/', public_smeta, name='public_smeta'),
 ]

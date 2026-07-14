@@ -45,4 +45,22 @@
     </table>
 </div>
 
+{% if fotoakty %}
+<div style="page-break-before: always;"></div>
+<div class="section-title">Фотофиксация выполненных работ</div>
+<p style="font-size:8.5pt;color:#555;">Приложение к Акту №{{ d.nomer }}. Фотографии с датой, адресом и геометкой.</p>
+<table class="data" style="border:0;">
+    {% for f in fotoakty %}
+    {% if forloop.counter0|divisibleby:2 %}<tr>{% endif %}
+        <td style="border:0; width:260pt; text-align:center; vertical-align:top; padding:6pt;">
+            <img src="{{ f.foto_file.url }}" style="max-width:250pt; max-height:190pt;"><br>
+            <span style="font-size:7.5pt;color:#666;">
+                {{ f.podpis_snizu|default:"Фото" }}{% if f.est_geo %} · {{ f.geo_lat }}, {{ f.geo_lon }}{% endif %}
+            </span>
+        </td>
+    {% if forloop.counter|divisibleby:2 or forloop.last %}</tr>{% endif %}
+    {% endfor %}
+</table>
+{% endif %}
+
 {% endblock %}
