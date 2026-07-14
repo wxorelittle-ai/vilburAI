@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'smety.apps.SmetyConfig',          # Модуль B — генератор смет
     'billing.apps.BillingConfig',      # Тарифы, ЮKassa, LimitTracker
     'objekty.apps.ObjektyConfig',      # Модуль J — контроль объектов + AI-ассистент (Addendum №2)
+    'podpis.apps.PodpisConfig',        # Модуль I — простая электронная подпись (ПЭП)
 ]
 
 MIDDLEWARE = [
@@ -138,6 +139,10 @@ YOOKASSA_TEST_MODE = config('YOOKASSA_TEST_MODE', default=True, cast=bool)
 
 ANTHROPIC_API_KEY = config('ANTHROPIC_API_KEY', default='')
 ANTHROPIC_MODEL = config('ANTHROPIC_MODEL', default='claude-sonnet-4-6')
+
+# --- СМС-шлюз (Модуль I — ПЭП, раздел 6 ТЗ) ------------------------------------
+# Без ключа коды подписания показываются на экране (демо), с ключом — реальная СМС.
+SMS_API_KEY = config('SMS_API_KEY', default='')
 
 # --- Безопасность в проде (включается через .env при DEBUG=False) --------------
 

@@ -32,6 +32,32 @@
         {% endif %}
     </div>
 
+    {% with p=d.podpisi.first %}
+    <div class="rounded-2xl border border-sand-deep bg-white p-5 mb-6 shadow-card flex items-center justify-between flex-wrap gap-3">
+        <div>
+            <p class="font-display font-bold text-grafit">Электронная подпись заказчика (ПЭП)</p>
+            {% if p and p.podpisano %}
+                <p class="text-sm text-[#3B5A2E]">✓ Подписан {{ p.data_podpisi|date:"d.m.Y H:i" }} · телефон {{ p.telefon }}</p>
+            {% elif p %}
+                <p class="text-sm text-steel">Ссылка создана, ожидает подписания заказчиком.</p>
+            {% else %}
+                <p class="text-sm text-steel">Отправьте заказчику ссылку — он подпишет документ СМС-кодом (63-ФЗ).</p>
+            {% endif %}
+        </div>
+        {% if p and p.podpisano %}
+            <span class="text-xs font-bold text-white bg-[#5C8A46] rounded-full px-3 py-1.5">Подписано</span>
+        {% elif current_brigada.effective_tarif == 'brigadir' or current_brigada.effective_tarif == 'pro' %}
+            <a href="{% url 'podpis:zaprosit' d.pk %}" class="bg-grafit hover:bg-grafit-700 transition text-white font-semibold px-5 py-2.5 rounded-lg text-sm">
+                {% if p %}Открыть ссылку подписания{% else %}Запросить подпись{% endif %}
+            </a>
+        {% else %}
+            <a href="{% url 'billing:plans' %}" class="border-2 border-grafit text-grafit font-semibold px-5 py-2.5 rounded-lg text-sm hover:bg-sand" title="ПЭП доступна на тарифе «Бригадир»">
+                Подпись (Бригадир)
+            </a>
+        {% endif %}
+    </div>
+    {% endwith %}
+
     {% if d.pdf_file %}
     <div class="rounded-2xl border border-sand-deep overflow-hidden bg-white" style="height: 80vh;">
         <iframe src="{% url 'documents:download' d.pk %}" class="w-full h-full" style="border:0;"></iframe>

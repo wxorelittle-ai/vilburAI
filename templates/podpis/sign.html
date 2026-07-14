@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Подписание документа — {{ brigada.nazvanie }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+
+    <div class="rounded-2xl bg-grafit text-white p-6 mb-6">
+        <p class="text-sm text-white/70 mb-1">{{ brigada.nazvanie }}</p>
+        <h1 class="font-display text-2xl font-bold">{{ dokument.get_tip_display }} №{{ dokument.nomer }}</h1>
+        <p class="text-sm text-white/80 mt-1">Заказчик: {{ dokument.zakazchik }} · Объект: {{ dokument.adres_obekta }}</p>
+    </div>
+
+    {% if podpis.podpisano %}
+    <div class="rounded-2xl bg-[#EAF1E6] border-2 border-[#CFE0C4] p-6 text-center">
+        <p class="font-display text-xl font-bold text-[#3B5A2E] mb-2">✓ Документ подписан</p>
+        <p class="text-sm text-[#3B5A2E]">Дата подписи: {{ podpis.data_podpisi|date:"d.m.Y H:i" }}</p>
+        <p class="text-xs text-steel mt-3">Простая электронная подпись зафиксирована: телефон, IP и хеш документа.</p>
+        <p class="text-[10px] text-steel/70 mt-2 break-all">SHA-256: {{ podpis.doc_hash }}</p>
+    </div>
+    {% else %}
+
+    {% if dokument.pdf_file %}
+    <div class="rounded-2xl border border-sand-deep overflow-hidden bg-white mb-6" style="height: 60vh;">
+        <iframe src="{% url 'documents:download' dokument.pk %}" class="w-full h-full" style="border:0;"></iframe>
+    </div>
+    {% endif %}
+
+    {% if demo_kod %}
+    <div class="rounded-xl bg-[#FBF3E5] border border-[#EAD8BC] text-[#7A5A2E] text-sm px-4 py-3 mb-4">
+        Демо-режим: код подтверждения — <span class="font-display font-extrabold text-lg tracking-widest">{{ demo_kod }}</span>
+        (в боевом режиме приходит по СМС на телефон).
+    </div>
+    {% endif %}
+
+    <div class="bg-white border border-sand-deep rounded-2xl shadow-card p-6">
+        {% if not kod_zaproshen %}
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="request_code">
+            <label class="flex items-start gap-3 text-sm text-grafit">
+                <input type="checkbox" name="soglasie" class="mt-1 w-5 h-5">
+                <span>Я ознакомился(-ась) с документом, согласен(-на) с его условиями и подтверждаю намерение
+                    подписать его простой электронной подписью (ПЭП, 63-ФЗ).</span>
+            </label>
+            <div>
+                <label class="block text-sm font-medium text-grafit mb-1.5">Ваш телефон для кода подтверждения</label>
+                <input type="tel" name="telefon" placeholder="+79991234567" required
+                       class="w-full bg-sand/40 border border-sand-deep rounded-lg px-4 min-h-[48px] text-grafit">
+            </div>
+            <button type="submit" class="w-full bg-terracotta hover:bg-accent-dark transition text-white font-bold text-lg py-4 rounded-xl">
+                Получить код подтверждения
+            </button>
+        </form>
+        {% else %}
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="confirm">
+            <p class="text-sm text-steel">Код отправлен на {{ podpis.telefon }}. Введите его, чтобы подписать документ.</p>
+            <div>
+                <label class="block text-sm font-medium text-grafit mb-1.5">Код из СМС</label>
+                <input type="text" name="kod" inputmode="numeric" maxlength="6" placeholder="000000" required
+                       class="w-full bg-sand/40 border border-sand-deep rounded-lg px-4 min-h-[48px] text-grafit text-center text-lg tracking-widest">
+            </div>
+            <button type="submit" class="w-full bg-grafit hover:bg-grafit-700 transition text-white font-bold text-lg py-4 rounded-xl">
+                Подписать документ
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    <p class="text-xs text-steel/70 mt-4 text-center">Подписывая документ, вы соглашаетесь на обработку введённых данных для фиксации факта подписи.</p>
+    {% endif %}
+</div>
+{% endblock %}
