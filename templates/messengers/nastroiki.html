@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Мессенджеры — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <h1 class="font-display text-3xl font-bold text-grafit mb-1">Мессенджеры</h1>
+    <p class="text-sm text-steel mb-8">Отправляйте документы заказчику в WhatsApp и получайте уведомления в Telegram.</p>
+
+    <!-- Telegram -->
+    <div class="bg-white border border-sand-deep rounded-2xl shadow-card p-6 mb-6">
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h2 class="font-display font-bold text-grafit">Telegram-бот уведомлений</h2>
+            {% if tg.svyazan %}
+            <span class="text-xs font-bold text-white bg-[#5C8A46] rounded-full px-3 py-1.5">Привязан{% if tg.username %} · @{{ tg.username }}{% endif %}</span>
+            {% else %}
+            <span class="text-xs font-bold text-[#7A5A2E] bg-[#FBF3E5] rounded-full px-3 py-1.5">Не привязан</span>
+            {% endif %}
+        </div>
+        {% if tg.svyazan %}
+        <p class="text-sm text-steel">Бот пришлёт уведомления о статусе документов и тарифа. Команды в чате: <code class="bg-sand px-1 rounded">/dokumenty</code> <code class="bg-sand px-1 rounded">/raschet</code> <code class="bg-sand px-1 rounded">/smeta</code> <code class="bg-sand px-1 rounded">/nalogi</code>.</p>
+        {% else %}
+        <p class="text-sm text-steel mb-3">Нажмите кнопку — откроется бот, привязка произойдёт автоматически (команда <code class="bg-sand px-1 rounded">/start</code> с вашим кодом).</p>
+        <a href="{{ deep_link }}" target="_blank" class="inline-flex items-center gap-2 bg-grafit hover:bg-grafit-700 transition text-white font-semibold px-5 py-2.5 rounded-lg text-sm">
+            Привязать Telegram
+        </a>
+        <p class="text-xs text-steel mt-2">Код привязки: <span class="font-mono">{{ tg.connect_code }}</span></p>
+        {% endif %}
+        {% if tg_demo %}<p class="text-xs text-[#7A5A2E] mt-3">Демо: <code class="bg-sand px-1 rounded">TELEGRAM_BOT_TOKEN</code> не настроен — бот заработает после добавления токена и запуска <code class="bg-sand px-1 rounded">manage.py telegram_bot</code>.</p>{% endif %}
+    </div>
+
+    <!-- WhatsApp -->
+    <div class="bg-white border border-sand-deep rounded-2xl shadow-card p-6">
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h2 class="font-display font-bold text-grafit">WhatsApp-отправка</h2>
+            {% if wa_demo %}<span class="text-xs font-bold text-[#7A5A2E] bg-[#FBF3E5] rounded-full px-3 py-1.5">Демо-режим</span>{% else %}<span class="text-xs font-bold text-white bg-[#5C8A46] rounded-full px-3 py-1.5">Подключён</span>{% endif %}
+        </div>
+        <p class="text-sm text-steel mb-4">Кнопки отправки документа и ссылки на подпись — в карточке каждого документа.
+            {% if wa_demo %}Демо: подключите шлюз (Wazzup) ключом <code class="bg-sand px-1 rounded">WHATSAPP_API_KEY</code> для реальной отправки.{% endif %}</p>
+
+        {% if wa_otpravki %}
+        <div class="rounded-xl border border-sand-deep overflow-hidden overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-sand text-steel text-left"><tr><th class="px-3 py-2">Дата</th><th class="px-3 py-2">Кому</th><th class="px-3 py-2">Что</th><th class="px-3 py-2">Статус</th></tr></thead>
+                <tbody class="divide-y divide-sand-deep">
+                    {% for o in wa_otpravki %}
+                    <tr>
+                        <td class="px-3 py-2 text-steel">{{ o.data|date:"d.m H:i" }}</td>
+                        <td class="px-3 py-2 text-grafit">{{ o.telefon }}</td>
+                        <td class="px-3 py-2 text-steel">{{ o.get_tip_display }}</td>
+                        <td class="px-3 py-2"><span class="text-xs font-semibold text-[#3B5A2E] bg-[#EAF1E6] rounded px-2 py-0.5">{{ o.get_status_display }}{% if o.demo_rezhim %} (демо){% endif %}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-steel/70">Отправок пока не было.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

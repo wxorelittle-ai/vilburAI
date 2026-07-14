@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'fotoakty.apps.FotoaktyConfig',    # Модуль G — фото-акты с геолокацией
     'nalogi.apps.NalogiConfig',        # Модуль D — налоги и чеки ФНС
     'proverka.apps.ProverkaConfig',    # Модуль E — проверка заказчика
+    'messengers.apps.MessengersConfig',  # Модуль F — WhatsApp / Telegram
 ]
 
 MIDDLEWARE = [
@@ -154,6 +155,12 @@ FNS_API_KEY = config('FNS_API_KEY', default='')
 # --- Проверка контрагентов (Модуль E, раздел 6.5 ТЗ) --------------------------
 # Без ключа — демо (внутренний чёрный список + модель), с ключом — Контур/СПАРК.
 KONTUR_API_KEY = config('KONTUR_API_KEY', default='')
+
+# --- Мессенджеры (Модуль F, раздел 6.6 ТЗ) ------------------------------------
+# Без ключей — демо. WhatsApp — через Wazzup; Telegram-бот — long-polling.
+WHATSAPP_API_KEY = config('WHATSAPP_API_KEY', default='')
+TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN', default='')
+TELEGRAM_BOT_USERNAME = config('TELEGRAM_BOT_USERNAME', default='brigadirpro_bot')
 
 # --- Безопасность в проде (включается через .env при DEBUG=False) --------------
 
