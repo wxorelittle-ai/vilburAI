@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Бригадир.Про — договоры, сметы и защита денег для строительных бригад{% endblock %}
+
+{% block content %}
+
+<!-- Экран 1: боль -->
+<section class="relative overflow-hidden bg-grafit text-white">
+    <div aria-hidden="true" class="absolute inset-0 opacity-[0.12]"
+         style="background-image:linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px);background-size:34px 34px;"></div>
+    <div aria-hidden="true" class="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full blur-3xl"
+         style="background:radial-gradient(closest-side,rgba(216,154,84,.35),transparent);"></div>
+
+    <div class="relative max-w-5xl mx-auto px-4 sm:px-6 py-20 sm:py-28 text-center">
+        <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs sm:text-sm text-white/80 mb-8">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber"></span>
+            Для бригад, мастеров и самозанятых в ремонте
+        </span>
+        <h1 class="font-display text-4xl sm:text-6xl font-extrabold leading-[1.05] mb-6">
+            Вы теряете авансы,<br class="hidden sm:block">
+            потому что <span class="text-terracotta">нет договора?</span>
+        </h1>
+        <p class="text-lg sm:text-xl text-white/75 max-w-2xl mx-auto mb-10">
+            Каждая пятая бригада в России теряет деньги из-за «Васи с Авито» — устных договорённостей,
+            пропавших заказчиков и смет на коленке. Бригадир.Про закрывает это за 3 минуты с телефона.
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a href="{% url 'core:register' %}"
+               class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-terracotta hover:bg-accent-dark transition text-white font-bold text-lg px-8 py-4 rounded-xl shadow-lift">
+                Создать первый договор бесплатно →
+            </a>
+            <a href="{% url 'core:login' %}"
+               class="w-full sm:w-auto inline-flex items-center justify-center text-white/80 hover:text-white font-semibold text-lg px-8 py-4 rounded-xl border border-white/15 hover:bg-white/5 transition">
+                У меня уже есть аккаунт
+            </a>
+        </div>
+        <p class="text-sm text-white/50 mt-6">Без карты · первый документ бесплатно · регистрация за минуту</p>
+    </div>
+</section>
+
+<!-- Экран 2: решение -->
+<section class="py-20 sm:py-24">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="text-center max-w-2xl mx-auto mb-14">
+            <p class="text-terracotta font-semibold text-sm uppercase tracking-wide mb-3">Три инструмента</p>
+            <h2 class="font-display text-3xl sm:text-4xl font-bold text-grafit">
+                Вместо блокнота и Авито-шаблонов
+            </h2>
+        </div>
+        <div class="grid sm:grid-cols-3 gap-6">
+            <div class="u-lift rounded-2xl border border-sand-deep bg-white p-7 shadow-card">
+                <div class="w-12 h-12 rounded-xl bg-terracotta/10 flex items-center justify-center text-terracotta font-display font-extrabold text-xl mb-5">A</div>
+                <h3 class="font-display font-bold text-lg mb-2 text-grafit">Документы</h3>
+                <p class="text-steel text-sm leading-relaxed">Договор подряда, акты, расписка об авансе — с вашим логотипом,
+                    готовый PDF за 2 минуты. Никакой юридической самодеятельности.</p>
+            </div>
+            <div class="u-lift rounded-2xl border border-sand-deep bg-white p-7 shadow-card">
+                <div class="w-12 h-12 rounded-xl bg-amber/15 flex items-center justify-center text-[#B07A34] font-display font-extrabold text-xl mb-5">C</div>
+                <h3 class="font-display font-bold text-lg mb-2 text-grafit">Себестоимость</h3>
+                <p class="text-steel text-sm leading-relaxed">Узнайте, ниже какой цены работать нельзя, и сколько взять,
+                    чтобы не остаться в минусе после материалов и простоя.</p>
+            </div>
+            <div class="u-lift rounded-2xl border border-sand-deep bg-white p-7 shadow-card">
+                <div class="w-12 h-12 rounded-xl bg-grafit/10 flex items-center justify-center text-grafit font-display font-extrabold text-xl mb-5">B</div>
+                <h3 class="font-display font-bold text-lg mb-2 text-grafit">Сметы</h3>
+                <p class="text-steel text-sm leading-relaxed">Конструктор из 50+ типовых работ, красивая PDF-смета
+                    и ссылка для заказчика — выглядите как профессиональная компания.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Экран 3: тарифы -->
+<section class="py-20 sm:py-24">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="text-center max-w-2xl mx-auto mb-14">
+            <p class="text-terracotta font-semibold text-sm uppercase tracking-wide mb-3">Тарифы</p>
+            <h2 class="font-display text-3xl sm:text-4xl font-bold text-grafit">Начните бесплатно, растите по мере заказов</h2>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {% for t in tarify %}
+            <div class="u-lift rounded-2xl p-6 bg-white flex flex-col shadow-card border-2 {% if t.akcent %}border-terracotta relative{% else %}border-sand-deep{% endif %}">
+                {% if t.akcent %}
+                <span class="absolute -top-3 left-6 text-xs font-bold text-white bg-terracotta uppercase tracking-wide px-3 py-1 rounded-full">Популярный</span>
+                {% endif %}
+                <h3 class="font-display font-bold text-lg text-grafit">{{ t.nazvanie }}</h3>
+                <p class="font-display text-3xl font-extrabold my-3 text-grafit">{{ t.cena }}</p>
+                <p class="text-sm text-steel flex-1 leading-relaxed">{{ t.opisanie }}</p>
+                <a href="{% url 'core:register' %}"
+                   class="mt-6 text-center text-sm font-semibold px-4 py-3 rounded-lg transition
+                   {% if t.akcent %}bg-terracotta text-white hover:bg-accent-dark{% else %}bg-sand text-grafit hover:bg-sand-deep{% endif %}">
+                    Выбрать
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Финальный CTA -->
+<section class="pb-24">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+        <div class="relative overflow-hidden rounded-3xl bg-grafit text-white px-6 sm:px-14 py-14 text-center shadow-lift">
+            <div aria-hidden="true" class="absolute -bottom-24 -right-16 w-80 h-80 rounded-full blur-3xl" style="background:radial-gradient(closest-side,rgba(193,80,46,.45),transparent);"></div>
+            <h2 class="relative font-display text-2xl sm:text-4xl font-bold mb-4">Защитите ближайший аванс уже сегодня</h2>
+            <p class="relative text-white/70 max-w-xl mx-auto mb-8">Первый договор — бесплатно и без карты. Дальше вы уже не захотите работать «на честном слове».</p>
+            <a href="{% url 'core:register' %}"
+               class="relative inline-flex items-center gap-2 bg-terracotta hover:bg-accent-dark transition text-white font-bold text-lg px-8 py-4 rounded-xl">
+                Создать бесплатный аккаунт →
+            </a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

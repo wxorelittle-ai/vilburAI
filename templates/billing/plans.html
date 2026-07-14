@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Тарифы — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+    <h1 class="font-display text-3xl font-bold text-grafit mb-2">Тарифы</h1>
+    <p class="text-sm text-steel mb-2">
+        Ваш текущий тариф: <span class="font-semibold text-grafit">{{ brigada.tarif_label }}</span>
+        {% if brigada.data_okonchaniya_tarifa %} · действует до {{ brigada.data_okonchaniya_tarifa|date:"d.m.Y" }}{% endif %}
+    </p>
+
+    {% if demo_rezhim %}
+    <div class="rounded-xl bg-[#FBF3E5] border border-[#EAD8BC] p-4 text-sm text-[#7A5A2E] mb-8 mt-4">
+        <span class="font-semibold">Демо-режим.</span> Ключи ЮKassa не настроены — оформление подписки
+        активирует тариф мгновенно, без реального списания денег. Чтобы включить настоящую оплату,
+        добавьте <code class="bg-white/60 px-1 rounded">YOOKASSA_SHOP_ID</code> и
+        <code class="bg-white/60 px-1 rounded">YOOKASSA_SECRET_KEY</code> в <code class="bg-white/60 px-1 rounded">.env</code>.
+    </div>
+    {% endif %}
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-6">
+        {% for t in tarify %}
+        <div class="u-lift relative rounded-2xl p-6 bg-white flex flex-col shadow-card border-2
+            {% if t.is_current %}border-grafit{% elif t.kod == 'brigadir' %}border-terracotta{% else %}border-sand-deep{% endif %}">
+            {% if t.is_current %}
+                <span class="absolute -top-3 left-6 text-xs font-bold text-white bg-grafit uppercase tracking-wide px-3 py-1 rounded-full">Ваш тариф</span>
+            {% elif t.kod == 'brigadir' %}
+                <span class="absolute -top-3 left-6 text-xs font-bold text-white bg-terracotta uppercase tracking-wide px-3 py-1 rounded-full">Популярный</span>
+            {% endif %}
+            <h3 class="font-display font-bold text-lg text-grafit mt-1">{{ t.label }}</h3>
+            <p class="font-display text-3xl font-extrabold my-3 text-grafit">{{ t.price }} ₽{% if t.price > 0 %}<span class="text-sm font-normal text-steel">/мес</span>{% endif %}</p>
+
+            <ul class="text-sm text-steel space-y-2 flex-1 mt-1">
+                <li class="flex items-center gap-2"><span class="text-terracotta">•</span> Документы: {% if t.dokumenty == None %}безлимит{% else %}{{ t.dokumenty }}/мес{% endif %}</li>
+                <li class="flex items-center gap-2"><span class="text-terracotta">•</span> Расчёты: {% if t.raschety == None %}безлимит{% else %}{{ t.raschety }}/мес{% endif %}</li>
+                <li class="flex items-center gap-2"><span class="text-terracotta">•</span> Сметы: {% if t.smety == None %}безлимит{% else %}{{ t.smety }}/мес{% endif %}</li>
+            </ul>
+
+            {% if t.is_current %}
+                <span class="mt-6 text-center text-sm font-semibold px-4 py-3 rounded-lg bg-sand text-grafit">
+                    Текущий тариф
+                </span>
+            {% elif t.is_platny %}
+                <form method="post" action="{% url 'billing:upgrade' t.kod %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="w-full mt-6 text-center text-sm font-semibold px-4 py-3 rounded-lg bg-terracotta text-white hover:bg-accent-dark transition min-h-[48px]">
+                        Выбрать
+                    </button>
+                </form>
+            {% else %}
+                <span class="mt-6 text-center text-sm font-semibold px-4 py-3 rounded-lg bg-sand text-steel">
+                    Бесплатный старт
+                </span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <a href="{% url 'billing:history' %}" class="inline-block mt-8 text-sm text-steel hover:text-terracotta font-medium">
+        История платежей →
+    </a>
+</div>
+{% endblock %}

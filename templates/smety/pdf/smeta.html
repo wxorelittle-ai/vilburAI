@@ -1,0 +1,44 @@
+{% extends "documents/pdf/base_pdf.html" %}
+{% block content %}
+
+<h1>СМЕТА №{{ s.nomer }}</h1>
+<p class="subtitle">{{ s.nazvanie }}</p>
+
+<p>
+    {% if s.adres %}Объект: <span class="b">{{ s.adres }}</span><br>{% endif %}
+    {% if s.zakazchik %}Заказчик: <span class="b">{{ s.zakazchik }}</span><br>{% endif %}
+    Дата: <span class="b">{{ s.data|date:"d.m.Y" }}</span>
+    {% if s.srok_dney %} · Срок выполнения: <span class="b">{{ s.srok_dney }} дн.</span>{% endif %}
+</p>
+
+<table class="data">
+    <tr>
+        <th style="width:5%">№</th>
+        <th style="width:45%">Наименование работ</th>
+        <th style="width:12%">Ед. изм.</th>
+        <th style="width:13%">Кол-во</th>
+        <th style="width:12%">Цена, ₽</th>
+        <th style="width:13%">Сумма, ₽</th>
+    </tr>
+    {% for r in raboty %}
+    <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ r.nazvanie }}</td>
+        <td>{{ r.edinica }}</td>
+        <td>{{ r.kolvo }}</td>
+        <td>{{ r.cena }}</td>
+        <td>{{ r.summa }}</td>
+    </tr>
+    {% endfor %}
+    <tr class="total">
+        <td colspan="5">ИТОГО</td>
+        <td>{{ s.itogo }}</td>
+    </tr>
+</table>
+
+<p style="margin-top: 14pt; font-size: 8.5pt; color: #666;">
+    Смета носит предварительный характер и подлежит уточнению после осмотра объекта.
+    Окончательная стоимость фиксируется в договоре подряда.
+</p>
+
+{% endblock %}

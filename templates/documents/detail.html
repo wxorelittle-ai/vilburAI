@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ d.get_tip_display }} №{{ d.nomer }} — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <a href="{% url 'documents:list' %}" class="text-sm text-steel hover:text-navy">← К истории документов</a>
+
+    <div class="mt-4 mb-6 flex items-center justify-between flex-wrap gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-navy">{{ d.get_tip_display }} №{{ d.nomer }}</h1>
+            <p class="text-sm text-steel">Заказчик: {{ d.zakazchik }} · Объект: {{ d.adres_obekta }}</p>
+        </div>
+        {% if d.pdf_file %}
+        <div class="flex gap-2">
+            <a href="{% url 'documents:download' d.pk %}"
+               class="bg-accent hover:bg-accent-dark transition text-white font-bold px-6 py-3 rounded-xl min-h-[48px] flex items-center">
+                Скачать PDF
+            </a>
+            {% if current_brigada.effective_tarif == 'pro' %}
+            <a href="{% url 'documents:download_docx' d.pk %}"
+               class="bg-navy hover:bg-navy/90 transition text-white font-bold px-6 py-3 rounded-xl min-h-[48px] flex items-center">
+                Скачать Word
+            </a>
+            {% else %}
+            <a href="{% url 'billing:plans' %}"
+               class="border-2 border-navy text-navy font-bold px-6 py-3 rounded-xl min-h-[48px] flex items-center hover:bg-sand"
+               title="Экспорт в Word доступен на тарифе PRO">
+                Word (PRO)
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    {% if d.pdf_file %}
+    <div class="rounded-2xl border border-sand-deep overflow-hidden bg-white" style="height: 80vh;">
+        <iframe src="{% url 'documents:download' d.pk %}" class="w-full h-full" style="border:0;"></iframe>
+    </div>
+    {% else %}
+    <div class="rounded-2xl bg-red-50 border border-red-100 p-6 text-sm text-red-700">
+        PDF не удалось сформировать. Попробуйте создать документ заново.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

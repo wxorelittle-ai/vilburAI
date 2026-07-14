@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Новый документ — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+    <h1 class="text-2xl font-bold text-navy mb-8">Какой документ создаём?</h1>
+
+    <div class="grid sm:grid-cols-2 gap-5">
+        {% for t in tipy %}
+        <a href="{% url 'documents:create' t.kod %}"
+           class="block rounded-2xl border-2 border-sand-deep hover:border-accent p-6 transition bg-white min-h-[60px]">
+            <h3 class="font-bold text-lg text-navy mb-1">{{ t.nazvanie }}</h3>
+            <p class="text-sm text-steel">{{ t.opisanie }}</p>
+        </a>
+        {% endfor %}
+    </div>
+
+    <a href="{% url 'documents:list' %}" class="inline-block mt-8 text-sm text-steel hover:text-navy">
+        ← К истории документов
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ s.nazvanie }} — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <a href="{% url 'smety:list' %}" class="text-sm text-steel hover:text-navy">← История смет</a>
+
+    <div class="mt-4 mb-6 flex items-start justify-between flex-wrap gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-navy">{{ s.nazvanie }}</h1>
+            <p class="text-sm text-steel">№{{ s.nomer }} · Итого: {{ s.itogo }} ₽</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'smety:edit' s.pk %}"
+               class="text-sm font-semibold text-navy border border-navy rounded-lg px-4 py-2 hover:bg-sand min-h-[44px] flex items-center">
+                Редактировать
+            </a>
+            <form method="post" action="{% url 'smety:duplicate' s.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="text-sm font-semibold text-navy border border-navy rounded-lg px-4 py-2 hover:bg-sand min-h-[44px]">
+                    Дублировать
+                </button>
+            </form>
+            <a href="{% url 'objekty:create' %}?smeta={{ s.pk }}"
+               class="text-sm font-semibold text-white bg-grafit hover:bg-grafit-700 transition rounded-lg px-4 py-2 min-h-[44px] flex items-center">
+                → Создать объект
+            </a>
+            {% if s.pdf_file %}
+            <a href="{% url 'smety:download' s.pk %}"
+               class="bg-accent hover:bg-accent-dark transition text-white font-bold px-5 py-2 rounded-lg min-h-[44px] flex items-center">
+                Скачать PDF
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-sand-deep bg-white p-6 mb-6">
+        {% if s.is_public %}
+            <p class="text-sm text-green-700 mb-2 font-semibold">✓ Смета опубликована — ссылка доступна заказчику</p>
+            <div class="flex items-center gap-2 mb-3">
+                <input type="text" readonly value="{{ request.scheme }}://{{ request.get_host }}{% url 'public_smeta' s.public_slug %}"
+                       class="flex-1 border border-sand-deep rounded-lg px-3 py-2 text-sm bg-sand" onclick="this.select()">
+            </div>
+            <form method="post" action="{% url 'smety:unpublish' s.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="text-sm text-steel underline hover:text-red-600">Снять с публикации</button>
+            </form>
+        {% else %}
+            <p class="text-sm text-steel mb-3">Смета пока в черновике — заказчик её не видит.</p>
+            <form method="post" action="{% url 'smety:publish' s.pk %}">
+                {% csrf_token %}
+                <button type="submit"
+                        class="bg-navy hover:bg-navy/90 transition text-white font-bold px-5 py-3 rounded-xl min-h-[48px]">
+                    Опубликовать для заказчика
+                </button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if s.pdf_file %}
+    <div class="rounded-2xl border border-sand-deep overflow-hidden bg-white" style="height: 70vh;">
+        <iframe src="{% url 'smety:download' s.pk %}" class="w-full h-full" style="border:0;"></iframe>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

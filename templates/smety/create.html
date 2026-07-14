@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}Редактирование сметы{% else %}Новая смета{% endif %} — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <a href="{% url 'smety:list' %}" class="text-sm text-steel hover:text-navy">← История смет</a>
+    <h1 class="text-2xl font-bold text-navy mt-2 mb-2">
+        {% if is_edit %}Редактирование сметы{% else %}Новая смета{% endif %}
+    </h1>
+
+    {% if limit_info and not limit_info.unlimited %}
+        <p class="text-sm mb-6 text-steel">
+            Смет в этом месяце: {{ limit_info.used }} из {{ limit_info.limit }}
+        </p>
+    {% endif %}
+
+    <form method="post" id="smeta-form" class="space-y-5">
+        {% csrf_token %}
+
+        {% for field in form %}
+        <div>
+            <label class="block text-sm font-medium text-grafit mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}<p class="text-xs text-red-600 mt-1">{{ error }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+
+        <div>
+            <label class="block text-sm font-medium text-grafit mb-2">Позиции работ</label>
+
+            <div class="flex flex-wrap gap-2 mb-3 items-center bg-sand rounded-lg p-3">
+                <select id="baza-select" class="border border-sand-deep rounded-lg px-3 py-2 text-sm flex-1 min-w-[220px]">
+                    <option value="">— выбрать работу из базы цен —</option>
+                    {% regroup baza_cen by get_kategoriya_display as baza_grupy %}
+                    {% for gruppa in baza_grupy %}
+                    <optgroup label="{{ gruppa.grouper }}">
+                        {% for b in gruppa.list %}
+                        <option value="{{ b.pk }}">{{ b.nazvanie }} ({{ b.edinica }})</option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endfor %}
+                </select>
+                <button type="button" id="add-from-baza-btn"
+                        class="text-sm font-semibold text-navy border border-navy rounded-lg px-4 py-2 hover:bg-sand min-h-[40px]">
+                    + Добавить из базы
+                </button>
+            </div>
+
+            {{ formset.management_form }}
+            <div id="raboty-rows" class="space-y-3">
+                {% for rform in formset %}
+                    {% include "smety/_row.html" with form=rform %}
+                {% endfor %}
+            </div>
+
+            <button type="button" id="add-empty-row-btn"
+                    class="mt-3 text-sm font-semibold text-navy border border-navy rounded-lg px-4 py-2 hover:bg-sand">
+                + Пустая строка
+            </button>
+        </div>
+
+        <button type="submit"
+                class="w-full bg-accent hover:bg-accent-dark transition text-white font-bold text-lg py-4 rounded-xl min-h-[60px]">
+            {% if is_edit %}Сохранить изменения{% else %}Создать смету{% endif %}
+        </button>
+    </form>
+</div>
+
+<script>
+    document.querySelectorAll('#smeta-form input:not([type=checkbox]), #smeta-form select').forEach(el => {
+        el.classList.add('w-full', 'border', 'border-sand-deep', 'rounded-lg', 'px-3', 'py-2', 'min-h-[44px]', 'text-sm', 'focus:outline-none', 'focus:ring-2', 'focus:ring-accent');
+    });
+
+    window.rowCounter = {{ formset.total_form_count }};
+
+    function bumpTotalForms() {
+        const totalFormsInput = document.querySelector('input[name$="-TOTAL_FORMS"]');
+        window.rowCounter += 1;
+        totalFormsInput.value = window.rowCounter;
+    }
+
+    function styleNewRow(row) {
+        row.querySelectorAll('input:not([type=checkbox])').forEach(el => {
+            el.classList.add('w-full', 'border', 'border-sand-deep', 'rounded-lg', 'px-3', 'py-2', 'min-h-[44px]', 'text-sm', 'focus:outline-none', 'focus:ring-2', 'focus:ring-accent');
+        });
+    }
+
+    document.getElementById('add-empty-row-btn').addEventListener('click', () => {
+        const index = window.rowCounter;
+        fetch(`{% url 'smety:add_row' %}?index=${index}`)
+            .then(r => r.text())
+            .then(html => {
+                const container = document.getElementById('raboty-rows');
+                container.insertAdjacentHTML('beforeend', html);
+                styleNewRow(container.lastElementChild);
+                bumpTotalForms();
+            });
+    });
+
+    document.getElementById('add-from-baza-btn').addEventListener('click', () => {
+        const select = document.getElementById('baza-select');
+        const bazaId = select.value;
+        if (!bazaId) return;
+        const uroven = document.getElementById('id_urovne_cen').value || 'srednyaya';
+        const index = window.rowCounter;
+        fetch(`{% url 'smety:add_row_from_baza' %}?index=${index}&baza_id=${bazaId}&uroven=${uroven}`)
+            .then(r => r.text())
+            .then(html => {
+                const container = document.getElementById('raboty-rows');
+                container.insertAdjacentHTML('beforeend', html);
+                styleNewRow(container.lastElementChild);
+                bumpTotalForms();
+                select.value = '';
+            });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Мои объекты — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+            <h1 class="font-display text-3xl font-bold text-grafit">Мои объекты</h1>
+            <p class="text-sm text-steel mt-1">Контроль графика, материалов, оплаты и денег по каждому объекту.</p>
+        </div>
+        <a href="{% url 'objekty:create' %}"
+           class="bg-terracotta hover:bg-accent-dark transition text-white font-bold px-5 py-3 rounded-xl min-h-[48px] flex items-center shadow-lift">
+            + Новый объект
+        </a>
+    </div>
+
+    {% if trebuyut_vnimaniya %}
+    <div class="rounded-2xl border-2 border-terracotta bg-[#F7E7E1] p-5 mb-8">
+        <p class="font-display font-bold text-accent-dark mb-3 flex items-center gap-2">⚠ Требует внимания</p>
+        <div class="space-y-3">
+            {% for o in trebuyut_vnimaniya %}
+            <div>
+                <a href="{% url 'objekty:detail' o.pk %}" class="font-semibold text-grafit hover:text-terracotta">{{ o.nazvanie }}</a>
+                <ul class="text-sm text-accent-dark mt-1 space-y-0.5">
+                    {% for flag in o.krasnye_flagi %}<li>— {{ flag }}</li>{% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if obekty %}
+    <div class="grid sm:grid-cols-2 gap-5">
+        {% for o in obekty %}
+        <a href="{% url 'objekty:detail' o.pk %}"
+           class="u-lift block rounded-2xl border-2 bg-white p-6 shadow-card
+           {% if o.krasnye_flagi %}border-terracotta{% elif o.otstaet_ot_grafika %}border-amber{% else %}border-sand-deep{% endif %}">
+            <div class="flex items-start justify-between gap-3 mb-3">
+                <div>
+                    <h3 class="font-display font-bold text-lg text-grafit">{{ o.nazvanie }}</h3>
+                    <p class="text-sm text-steel">{{ o.adres|default:'—' }}</p>
+                </div>
+                <span class="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full
+                    {% if o.status == 'active' %}bg-[#EAF1E6] text-[#3B5A2E]
+                    {% elif o.status == 'completed' %}bg-sand-deep text-steel
+                    {% else %}bg-[#FBF3E5] text-[#7A5A2E]{% endif %}">
+                    {{ o.get_status_display }}
+                </span>
+            </div>
+
+            <div class="flex items-center gap-3 mb-3">
+                <div class="flex-1 h-2.5 rounded-full bg-sand-deep overflow-hidden">
+                    <div class="h-full rounded-full {% if o.krasnye_flagi %}bg-terracotta{% elif o.otstaet_ot_grafika %}bg-amber{% else %}bg-[#5C8A46]{% endif %}"
+                         style="width: {{ o.procent_gotovnosti }}%;"></div>
+                </div>
+                <span class="text-sm font-bold text-grafit">{{ o.procent_gotovnosti }}%</span>
+            </div>
+
+            <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-steel">
+                <span>Договор: <span class="text-grafit font-semibold">{{ o.summa_dogovora }} ₽</span></span>
+                <span>Баланс: <span class="{% if o.est_kassovy_razryv %}text-terracotta font-bold{% else %}text-grafit font-semibold{% endif %}">{{ o.kassovy_razryv }} ₽</span></span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="rounded-2xl bg-white border border-sand-deep p-10 text-center shadow-card">
+        <p class="text-steel mb-4">Пока нет ни одного объекта.</p>
+        <a href="{% url 'objekty:create' %}" class="text-terracotta font-semibold hover:text-accent-dark">Создать первый объект →</a>
+        <p class="text-xs text-steel/70 mt-3">Совет: объект можно собрать из готовой сметы — график построится автоматически.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

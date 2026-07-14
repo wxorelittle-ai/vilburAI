@@ -1,0 +1,17 @@
+# Нормализация переносов строк: в репозитории всегда LF.
+# Критично для деплоя — .sh/entrypoint на Linux-сервере должны быть LF,
+# иначе systemd/bash падают с "bad interpreter: No such file or directory".
+* text=auto eol=lf
+
+*.sh            text eol=lf
+docker-entrypoint.sh text eol=lf
+*.py            text eol=lf
+*.service       text eol=lf
+*.conf          text eol=lf
+
+# Бинарные файлы — не трогать
+*.png  binary
+*.jpg  binary
+*.ttf  binary
+*.pdf  binary
+*.ico  binary

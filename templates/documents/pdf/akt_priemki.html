@@ -1,0 +1,48 @@
+{% extends "documents/pdf/base_pdf.html" %}
+{% block content %}
+
+<h1>АКТ №{{ d.nomer }}</h1>
+<p class="subtitle">приёмки этапа выполненных работ</p>
+
+<p>
+    Объект: <span class="b">{{ d.adres_obekta }}</span><br>
+    Этап работ: <span class="b">{{ d.etap_nazvanie }}</span><br>
+    Дата: <span class="b">{{ d.data_sozdaniya|date:"d.m.Y" }}</span>
+</p>
+
+<p>
+    Исполнитель <span class="b">{{ brigada.nazvanie }}</span> и Заказчик <span class="b">{{ d.zakazchik }}</span>
+    произвели осмотр результатов выполненного этапа работ и составили настоящий Акт о нижеследующем:
+</p>
+
+<div class="section-title">Результаты осмотра</div>
+{% for item in checklist %}
+<div class="checklist-item"><span class="checkbox"></span>{{ item }}</div>
+{% endfor %}
+
+<div class="section-title">Защита от переделок</div>
+<p>
+    Подписание настоящего Акта означает окончательную приёмку Заказчиком указанного этапа работ без права
+    требования его безвозмездной переделки по основаниям, не зафиксированным письменно в настоящем Акте
+    на момент его подписания. Претензии по скрытым дефектам, которые не могли быть выявлены визуальным
+    осмотром на момент подписания, рассматриваются в рамках гарантийных обязательств по основному договору подряда.
+</p>
+
+<div class="signatures">
+    <table>
+        <tr>
+            <td class="sign-block">
+                <div class="b">Исполнитель:</div>
+                <div>{{ brigada.nazvanie }}</div>
+                <div class="sign-line">подпись / расшифровка</div>
+            </td>
+            <td class="sign-block">
+                <div class="b">Заказчик:</div>
+                <div>{{ d.zakazchik }}</div>
+                <div class="sign-line">подпись / расшифровка</div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+{% endblock %}

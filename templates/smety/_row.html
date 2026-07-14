@@ -1,0 +1,10 @@
+<div class="rabota-row grid grid-cols-12 gap-2 items-start border border-sand-deep rounded-lg p-3">
+    {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+    <div class="col-span-5">{{ form.nazvanie }}</div>
+    <div class="col-span-2">{{ form.edinica }}</div>
+    <div class="col-span-2">{{ form.kolvo }}</div>
+    <div class="col-span-2">{{ form.cena }}</div>
+    <div class="col-span-1 pt-3">
+        {% if form.DELETE %}{{ form.DELETE }}<span class="text-xs text-steel/70">✕</span>{% endif %}
+    </div>
+</div>

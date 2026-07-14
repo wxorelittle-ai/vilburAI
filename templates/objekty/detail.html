@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+{% block title %}{{ objekt.nazvanie }} — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+    <a href="{% url 'objekty:list' %}" class="text-sm text-steel hover:text-terracotta">← Мои объекты</a>
+
+    <div class="mt-3 mb-5 flex items-start justify-between flex-wrap gap-3">
+        <div>
+            <h1 class="font-display text-2xl sm:text-3xl font-bold text-grafit">{{ objekt.nazvanie }}</h1>
+            <p class="text-sm text-steel">
+                {{ objekt.adres|default:'адрес не указан' }}{% if objekt.zakazchik %} · заказчик: {{ objekt.zakazchik }}{% endif %}
+                {% if objekt.master_otvetstvenny %} · мастер: {{ objekt.master_otvetstvenny }}{% endif %}
+            </p>
+        </div>
+        <form method="post" class="flex items-center gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="set_status">
+            <select name="status" onchange="this.form.submit()" class="text-sm border border-sand-deep rounded-lg px-3 py-2 bg-white text-grafit">
+                {% for val, label in objekt.STATUS_CHOICES %}
+                <option value="{{ val }}" {% if objekt.status == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- Сводные показатели -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <div class="rounded-xl bg-white border border-sand-deep p-4 shadow-card">
+            <p class="text-xs text-steel mb-1">Готовность</p>
+            <p class="font-display text-2xl font-extrabold text-grafit">{{ objekt.procent_gotovnosti }}%</p>
+        </div>
+        <div class="rounded-xl bg-white border border-sand-deep p-4 shadow-card">
+            <p class="text-xs text-steel mb-1">Получено</p>
+            <p class="font-display text-2xl font-extrabold text-grafit">{{ objekt.prihod_poluchen }} ₽</p>
+        </div>
+        <div class="rounded-xl bg-white border border-sand-deep p-4 shadow-card">
+            <p class="text-xs text-steel mb-1">Расход</p>
+            <p class="font-display text-2xl font-extrabold text-grafit">{{ objekt.rashod_itogo }} ₽</p>
+        </div>
+        <div class="rounded-xl bg-white border p-4 shadow-card {% if objekt.est_kassovy_razryv %}border-terracotta{% else %}border-sand-deep{% endif %}">
+            <p class="text-xs text-steel mb-1">Баланс</p>
+            <p class="font-display text-2xl font-extrabold {% if objekt.est_kassovy_razryv %}text-terracotta{% else %}text-grafit{% endif %}">{{ objekt.kassovy_razryv }} ₽</p>
+        </div>
+    </div>
+
+    <!-- ⚠ Требует внимания — закреплённый блок сверху (раздел 7.6 ТЗ) -->
+    {% if objekt.krasnye_flagi %}
+    <div class="rounded-2xl border-2 border-terracotta bg-[#F7E7E1] p-4 mb-5">
+        <p class="font-display font-bold text-accent-dark mb-2">⚠ Требует внимания</p>
+        <ul class="text-sm text-accent-dark space-y-1">
+            {% for flag in objekt.krasnye_flagi %}<li>— {{ flag }}</li>{% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    {% if objekt.zhyoltye_flagi %}
+    <div class="rounded-2xl border-2 border-amber bg-[#FBF3E5] p-4 mb-5">
+        <p class="font-display font-bold text-[#7A5A2E] mb-2">◐ Отставание от графика</p>
+        <ul class="text-sm text-[#7A5A2E] space-y-1">
+            {% for flag in objekt.zhyoltye_flagi %}<li>— {{ flag }}</li>{% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Вкладки -->
+    <div class="flex gap-1 overflow-x-auto border-b border-sand-deep mb-6">
+        {% for key, label in tab_items %}
+        <a href="{{ request.path }}?tab={{ key }}"
+           class="whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 -mb-px transition
+           {% if tab == key %}border-terracotta text-terracotta{% else %}border-transparent text-steel hover:text-grafit{% endif %}">
+            {{ label }}
+        </a>
+        {% endfor %}
+    </div>
+
+    {# ---------------- ГРАФИК ---------------- #}
+    {% if tab == 'grafik' %}
+    <section class="space-y-4">
+        {% if etapy %}
+        <div class="space-y-3">
+            {% for e in etapy %}
+            <div class="rounded-xl bg-white border border-sand-deep p-4 shadow-card">
+                <div class="flex items-start justify-between gap-3 mb-2 flex-wrap">
+                    <div>
+                        <p class="font-semibold text-grafit">{{ e.nazvanie }}</p>
+                        <p class="text-xs text-steel">{{ e.plan_data_nachala|date:"d.m.Y" }} — {{ e.plan_data_okonchania|date:"d.m.Y" }} · план {{ e.plan_objem }} {{ e.edinica }}</p>
+                    </div>
+                    <span class="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full
+                        {% if e.status_temp == 'otstavanie' %}bg-[#F7E7E1] text-accent-dark
+                        {% elif e.status_temp == 'gotov' %}bg-[#EAF1E6] text-[#3B5A2E]
+                        {% elif e.status_temp == 'operezhenie' %}bg-[#FBF3E5] text-[#7A5A2E]
+                        {% else %}bg-sand-deep text-steel{% endif %}">{{ e.status_temp_label }}</span>
+                </div>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="flex-1 h-2 rounded-full bg-sand-deep overflow-hidden">
+                        <div class="h-full rounded-full {% if e.perezakryt %}bg-amber{% else %}bg-[#5C8A46]{% endif %}" style="width: {{ e.procent }}%;"></div>
+                    </div>
+                    <span class="text-sm font-bold text-grafit">{{ e.procent }}%</span>
+                </div>
+                {% if e.perezakryt %}<p class="text-xs text-[#7A5A2E] mb-2">⚠ Перезакрытие: факт {{ e.fact_objem }} превышает план {{ e.plan_objem }}</p>{% endif %}
+                <div class="flex items-center gap-2 flex-wrap">
+                    <form method="post" class="flex items-center gap-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="set_fact">
+                        <input type="hidden" name="etap_id" value="{{ e.pk }}">
+                        <label class="text-xs text-steel">Факт:</label>
+                        <input type="number" step="0.01" name="fact_objem" value="{{ e.fact_objem }}"
+                               class="w-24 border border-sand-deep rounded-lg px-2 py-1.5 text-sm bg-sand/40">
+                        <button type="submit" class="text-xs font-semibold text-grafit border border-grafit rounded-lg px-3 py-1.5 hover:bg-sand">Сохранить</button>
+                    </form>
+                    <form method="post" onsubmit="return confirm('Удалить этап?')">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="del_etap">
+                        <input type="hidden" name="etap_id" value="{{ e.pk }}">
+                        <button type="submit" class="text-xs text-steel hover:text-terracotta">Удалить</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-steel">Этапов пока нет. Добавьте первый — или создайте объект из сметы, чтобы график собрался автоматически.</p>
+        {% endif %}
+
+        {% include "objekty/_addform.html" with title="Добавить этап" action="add_etap" form=etap_form %}
+    </section>
+    {% endif %}
+
+    {# ---------------- МАТЕРИАЛЫ ---------------- #}
+    {% if tab == 'materialy' %}
+    <section class="space-y-4">
+        {% if materialy %}
+        <div class="rounded-2xl border border-sand-deep bg-white overflow-hidden shadow-card overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-sand text-steel text-left">
+                    <tr><th class="px-4 py-3">Материал</th><th class="px-4 py-3">Этап</th><th class="px-4 py-3">Крайняя дата заказа</th><th class="px-4 py-3">Статус</th><th class="px-4 py-3"></th></tr>
+                </thead>
+                <tbody class="divide-y divide-sand-deep">
+                    {% for m in materialy %}
+                    <tr class="{% if m.prosrocheno %}bg-[#F7E7E1]{% endif %}">
+                        <td class="px-4 py-3 font-medium text-grafit">{{ m.nazvanie }}</td>
+                        <td class="px-4 py-3 text-steel">{{ m.etap.nazvanie }}</td>
+                        <td class="px-4 py-3 {% if m.prosrocheno %}text-accent-dark font-bold{% else %}text-steel{% endif %}">{{ m.data_zakaza_kraynyaya|date:"d.m.Y"|default:"—" }}</td>
+                        <td class="px-4 py-3">
+                            <form method="post" class="flex items-center gap-1">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="material_status">
+                                <input type="hidden" name="material_id" value="{{ m.pk }}">
+                                <select name="status" onchange="this.form.submit()" class="text-xs border border-sand-deep rounded-lg px-2 py-1 bg-white
+                                    {% if m.prosrocheno %}text-accent-dark font-semibold{% else %}text-grafit{% endif %}">
+                                    {% for val, label in MATERIAL_STATUSY %}<option value="{{ val }}" {% if m.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                                </select>
+                                {% if m.prosrocheno %}<span class="text-xs text-accent-dark font-bold">просрочено</span>{% endif %}
+                            </form>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <form method="post" onsubmit="return confirm('Удалить материал?')">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="del_material">
+                                <input type="hidden" name="material_id" value="{{ m.pk }}">
+                                <button type="submit" class="text-xs text-steel hover:text-terracotta">✕</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-steel">Материалов пока нет. Крайняя дата заказа считается от даты начала этапа за вычетом сроков производства, доставки и буфера.</p>
+        {% endif %}
+
+        {% include "objekty/_addform.html" with title="Добавить материал" action="add_material" form=material_form %}
+    </section>
+    {% endif %}
+
+    {# ---------------- ОПЛАТА БРИГАДЕ ---------------- #}
+    {% if tab == 'oplata' %}
+    <section class="space-y-4">
+        {% if oplaty %}
+        <div class="rounded-2xl border border-sand-deep bg-white overflow-hidden shadow-card overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-sand text-steel text-left">
+                    <tr><th class="px-4 py-3">Монтажник</th><th class="px-4 py-3">Месяц</th><th class="px-4 py-3">План/Факт</th><th class="px-4 py-3">К оплате</th><th class="px-4 py-3">Оплачено</th><th class="px-4 py-3"></th></tr>
+                </thead>
+                <tbody class="divide-y divide-sand-deep">
+                    {% for o in oplaty %}
+                    <tr>
+                        <td class="px-4 py-3 font-medium text-grafit">{{ o.montajnik_fio }}</td>
+                        <td class="px-4 py-3 text-steel">{{ o.mesyats|date:"m.Y" }}</td>
+                        <td class="px-4 py-3 text-steel">{{ o.plan_objem_mesyats }} / {{ o.fact_objem_mesyats }}
+                            {% if o.prevyshenie_grafika and not o.oplacheno_sverh_grafika %}<span class="text-xs text-[#7A5A2E] font-bold block">⚠ факт &gt; плана</span>{% endif %}
+                        </td>
+                        <td class="px-4 py-3 font-semibold text-grafit">{{ o.summa_k_oplate }} ₽</td>
+                        <td class="px-4 py-3 text-steel">{{ o.summa_oplacheno }} ₽<span class="block text-xs">ост.: {{ o.ostatok_k_vyplate }} ₽</span></td>
+                        <td class="px-4 py-3 text-right">
+                            <form method="post" onsubmit="return confirm('Удалить запись?')">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="del_oplata">
+                                <input type="hidden" name="oplata_id" value="{{ o.pk }}">
+                                <button type="submit" class="text-xs text-steel hover:text-terracotta">✕</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-steel">Записей по оплате нет. Оплата ограничена плановым объёмом месяца — сверх графика только с явной галочкой.</p>
+        {% endif %}
+
+        {% include "objekty/_addform.html" with title="Начислить оплату" action="add_oplata" form=oplata_form %}
+    </section>
+    {% endif %}
+
+    {# ---------------- РАСХОДЫ ---------------- #}
+    {% if tab == 'rashody' %}
+    <section class="space-y-4">
+        {% if rashody %}
+        <div class="rounded-2xl border border-sand-deep bg-white overflow-hidden shadow-card overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-sand text-steel text-left">
+                    <tr><th class="px-4 py-3">Месяц</th><th class="px-4 py-3">Суточные</th><th class="px-4 py-3">Жильё</th><th class="px-4 py-3">Мастер</th><th class="px-4 py-3">Офис</th><th class="px-4 py-3">Прочее</th><th class="px-4 py-3">Итого</th><th class="px-4 py-3"></th></tr>
+                </thead>
+                <tbody class="divide-y divide-sand-deep">
+                    {% for r in rashody %}
+                    <tr>
+                        <td class="px-4 py-3 font-medium text-grafit">{{ r.mesyats|date:"m.Y" }}</td>
+                        <td class="px-4 py-3 text-steel">{{ r.sutochnye }}</td>
+                        <td class="px-4 py-3 text-steel">{{ r.arenda_kvartiry }}</td>
+                        <td class="px-4 py-3 text-steel">{{ r.oplata_mastera }}</td>
+                        <td class="px-4 py-3 text-steel">{{ r.dolya_ofisa }}</td>
+                        <td class="px-4 py-3 text-steel">{{ r.prochee }}</td>
+                        <td class="px-4 py-3 font-semibold text-grafit">{{ r.itogo }} ₽</td>
+                        <td class="px-4 py-3 text-right">
+                            <form method="post" onsubmit="return confirm('Удалить расходы за месяц?')">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="del_rashod">
+                                <input type="hidden" name="rashod_id" value="{{ r.pk }}">
+                                <button type="submit" class="text-xs text-steel hover:text-terracotta">✕</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-steel">Расходов пока нет.</p>
+        {% endif %}
+
+        {% include "objekty/_addform.html" with title="Добавить расходы за месяц" action="add_rashod" form=rashod_form %}
+    </section>
+    {% endif %}
+
+    {# ---------------- ДЕНЬГИ ОТ ЗАКАЗЧИКА ---------------- #}
+    {% if tab == 'dengi' %}
+    <section class="space-y-4">
+        {% if dvizhenie %}
+        <div class="rounded-2xl border border-sand-deep bg-white overflow-hidden shadow-card overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-sand text-steel text-left">
+                    <tr><th class="px-4 py-3">Основание</th><th class="px-4 py-3">Сумма</th><th class="px-4 py-3">За вычетом гарантии</th><th class="px-4 py-3">План</th><th class="px-4 py-3">Статус</th><th class="px-4 py-3"></th></tr>
+                </thead>
+                <tbody class="divide-y divide-sand-deep">
+                    {% for d in dvizhenie %}
+                    <tr>
+                        <td class="px-4 py-3 font-medium text-grafit">{{ d.osnovanie }}</td>
+                        <td class="px-4 py-3 text-steel">{{ d.summa_nachislenie }} ₽</td>
+                        <td class="px-4 py-3 text-steel">{{ d.summa_za_vychetom_garantii }} ₽</td>
+                        <td class="px-4 py-3 text-steel">{{ d.data_plan|date:"d.m.Y" }}</td>
+                        <td class="px-4 py-3">
+                            <form method="post" class="flex items-center">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="dengi_status">
+                                <input type="hidden" name="dengi_id" value="{{ d.pk }}">
+                                <select name="status" onchange="this.form.submit()" class="text-xs border border-sand-deep rounded-lg px-2 py-1 bg-white
+                                    {% if d.status == 'polucheno' %}text-[#3B5A2E] font-semibold{% elif d.status == 'prosrocheno' %}text-accent-dark font-semibold{% else %}text-grafit{% endif %}">
+                                    {% for val, label in DENGI_STATUSY %}<option value="{{ val }}" {% if d.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                                </select>
+                            </form>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <form method="post" onsubmit="return confirm('Удалить начисление?')">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="del_dengi">
+                                <input type="hidden" name="dengi_id" value="{{ d.pk }}">
+                                <button type="submit" class="text-xs text-steel hover:text-terracotta">✕</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-steel">Начислений нет. Сумма за вычетом гарантийного удержания ({{ objekt.garantiynoe_uderzhanie_procent }}%) считается автоматически.</p>
+        {% endif %}
+
+        {% include "objekty/_addform.html" with title="Добавить начисление" action="add_dengi" form=dengi_form %}
+    </section>
+    {% endif %}
+
+    {# ---------------- AI-АССИСТЕНТ ПРОРАБА ---------------- #}
+    {% if tab == 'ai' %}
+    <section class="space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+            <h2 class="font-display font-bold text-grafit">Спросить прораба</h2>
+            <span class="text-xs text-steel">
+                {% if ai_ostatok == None %}Запросы: безлимит{% else %}Осталось запросов в этом месяце: {{ ai_ostatok }}{% endif %}
+                {% if ai_demo %}· <span class="text-[#7A5A2E]">демо-режим</span>{% endif %}
+            </span>
+        </div>
+
+        {% for z in ai_zaprosy %}
+        <div class="rounded-xl bg-sand border border-sand-deep px-4 py-3">
+            <p class="text-sm font-semibold text-grafit">Вы: {{ z.vopros }}</p>
+        </div>
+        <div class="rounded-xl bg-white border border-sand-deep px-4 py-3 shadow-card">
+            <p class="text-xs font-bold text-terracotta mb-1">AI-прораб{% if z.demo_rezhim %} (демо){% endif %}:</p>
+            <div class="text-sm text-grafit whitespace-pre-wrap leading-relaxed">{{ z.otvet }}</div>
+        </div>
+        {% empty %}
+        <p class="text-sm text-steel">Задайте вопрос по объекту — ассистент проанализирует график, материалы, оплату и деньги
+            и первым делом покажет красные флаги. Он только читает данные и советует, ничего не меняя.</p>
+        {% endfor %}
+
+        {% if ai_dostupno %}
+        <form method="post" class="space-y-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="ask_ai">
+            <textarea name="vopros" rows="3" required placeholder="Например: что горит по объекту? успеваем ли по графику? кому переплачиваем?"
+                      class="w-full bg-sand/40 border border-sand-deep rounded-lg px-4 py-3 text-grafit text-sm"></textarea>
+            <button type="submit" class="bg-terracotta hover:bg-accent-dark transition text-white font-bold px-6 py-3 rounded-xl min-h-[48px]">
+                Спросить прораба
+            </button>
+        </form>
+        {% else %}
+        <div class="rounded-xl bg-[#FBF3E5] border border-[#EAD8BC] text-[#7A5A2E] text-sm px-4 py-3">
+            Месячный лимит запросов к AI-ассистенту исчерпан. <a href="{% url 'billing:plans' %}" class="underline font-semibold">Перейдите на PRO</a> для безлимита.
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+</div>
+
+<script>
+    document.querySelectorAll('.objekt-addform input:not([type=hidden]):not([type=checkbox]), .objekt-addform select, .objekt-addform textarea').forEach(el => {
+        el.classList.add('w-full', 'bg-sand/40', 'border', 'border-sand-deep', 'rounded-lg', 'px-3', 'py-2', 'min-h-[44px]', 'text-sm', 'text-grafit');
+    });
+</script>
+{% endblock %}

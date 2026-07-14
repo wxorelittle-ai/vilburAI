@@ -1,0 +1,65 @@
+{% extends "documents/pdf/base_pdf.html" %}
+{% block content %}
+
+<h1>АКТ №{{ d.nomer }}</h1>
+<p class="subtitle">о выполненных работах (форма ВКР)</p>
+
+<p>
+    Объект: <span class="b">{{ d.adres_obekta }}</span> &nbsp;&nbsp;&nbsp;
+    Дата: <span class="b">{{ d.srok_okonchania|default:d.data_sozdaniya|date:"d.m.Y" }}</span>
+</p>
+<p>
+    Мы, нижеподписавшиеся, Исполнитель <span class="b">{{ brigada.nazvanie }}</span> с одной стороны и
+    Заказчик <span class="b">{{ d.zakazchik }}</span> с другой стороны, составили настоящий Акт о том,
+    что Исполнителем выполнены, а Заказчиком приняты следующие работы:
+</p>
+
+<table class="data">
+    <tr>
+        <th style="width:5%">№</th>
+        <th style="width:40%">Наименование работ</th>
+        <th style="width:12%">Ед. изм.</th>
+        <th style="width:13%">Кол-во</th>
+        <th style="width:15%">Цена, ₽</th>
+        <th style="width:15%">Сумма, ₽</th>
+    </tr>
+    {% for p in pozicii %}
+    <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ p.nazvanie }}</td>
+        <td>{{ p.edinica }}</td>
+        <td>{{ p.kolvo }}</td>
+        <td>{{ p.cena }}</td>
+        <td>{{ p.summa }}</td>
+    </tr>
+    {% endfor %}
+    <tr class="total">
+        <td colspan="5">ИТОГО</td>
+        <td>{{ d.itogo_po_poziciyam }}</td>
+    </tr>
+</table>
+
+<p>
+    Работы выполнены в полном объёме, в согласованные сроки, с надлежащим качеством. Заказчик претензий
+    по объёму, качеству и срокам выполнения работ не имеет. Настоящий Акт является основанием для
+    окончательного расчёта по Договору подряда.
+</p>
+
+<div class="signatures">
+    <table>
+        <tr>
+            <td class="sign-block">
+                <div class="b">Исполнитель:</div>
+                <div>{{ brigada.nazvanie }}</div>
+                <div class="sign-line">подпись / расшифровка</div>
+            </td>
+            <td class="sign-block">
+                <div class="b">Заказчик:</div>
+                <div>{{ d.zakazchik }}</div>
+                <div class="sign-line">подпись / расшифровка</div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+{% endblock %}

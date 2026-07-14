@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}История смет — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+    <div class="flex items-center justify-between mb-8 flex-wrap gap-3">
+        <h1 class="text-2xl font-bold text-navy">История смет</h1>
+        <a href="{% url 'smety:create' %}"
+           class="bg-accent hover:bg-accent-dark transition text-white font-bold px-5 py-3 rounded-xl min-h-[48px] flex items-center">
+            + Новая смета
+        </a>
+    </div>
+
+    {% if smety %}
+    <div class="rounded-2xl border border-sand-deep bg-white overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-sand text-steel text-left">
+                <tr>
+                    <th class="px-4 py-3">№</th>
+                    <th class="px-4 py-3">Название</th>
+                    <th class="px-4 py-3">Сумма</th>
+                    <th class="px-4 py-3">Статус</th>
+                    <th class="px-4 py-3">Дата</th>
+                    <th class="px-4 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-sand-deep">
+                {% for s in smety %}
+                <tr>
+                    <td class="px-4 py-3 font-medium text-navy">{{ s.nomer }}</td>
+                    <td class="px-4 py-3">{{ s.nazvanie }}</td>
+                    <td class="px-4 py-3">{{ s.itogo }} ₽</td>
+                    <td class="px-4 py-3">
+                        {% if s.status == 'public' %}
+                            <span class="text-green-700 bg-green-50 text-xs font-semibold px-2 py-1 rounded">Опубликована</span>
+                        {% else %}
+                            <span class="text-steel bg-sand-deep text-xs font-semibold px-2 py-1 rounded">Черновик</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-steel">{{ s.data|date:"d.m.Y" }}</td>
+                    <td class="px-4 py-3 text-right">
+                        <a href="{% url 'smety:detail' s.pk %}" class="text-navy font-semibold hover:text-accent">Открыть →</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="rounded-2xl bg-white border border-sand-deep p-8 text-center">
+        <p class="text-grafit mb-4">Пока нет ни одной сметы.</p>
+        <a href="{% url 'smety:create' %}" class="text-navy font-semibold underline">Собрать первую →</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

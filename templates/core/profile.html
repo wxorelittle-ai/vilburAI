@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Профиль — Бригадир.Про{% endblock %}
+
+{% block content %}
+<section class="max-w-xl mx-auto px-4 sm:px-6 py-14">
+    <h1 class="font-display text-2xl font-bold text-grafit mb-2">Профиль бригады</h1>
+    <p class="text-sm text-steel mb-8">Логотип и реквизиты подставляются в PDF ваших документов и смет.</p>
+
+    <div class="bg-white rounded-2xl border border-sand-deep shadow-card p-7 sm:p-9">
+        <form method="post" enctype="multipart/form-data" class="space-y-5">
+            {% csrf_token %}
+
+            {% for field in form %}
+            <div>
+                <label class="block text-sm font-medium text-grafit mb-1.5" for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                </label>
+                {{ field }}
+                {% for error in field.errors %}
+                    <p class="text-xs text-accent-dark mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endfor %}
+
+            <button type="submit"
+                    class="w-full bg-grafit hover:bg-grafit-700 transition text-white font-bold text-lg py-4 rounded-xl shadow-card">
+                Сохранить
+            </button>
+        </form>
+    </div>
+</section>
+
+<script>
+    document.querySelectorAll('input[type=text], textarea').forEach(el => {
+        el.classList.add('w-full', 'bg-sand/40', 'border', 'border-sand-deep', 'rounded-lg', 'px-4', 'py-3', 'min-h-[48px]', 'text-grafit');
+    });
+</script>
+{% endblock %}

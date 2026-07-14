@@ -1,0 +1,16 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./media:/app/media
+      - sqlite_data:/app/data
+    environment:
+      SECRET_KEY: "docker-local-secret-change-me-if-exposing-this-publicly"
+      DEBUG: "True"
+      ALLOWED_HOSTS: "*"
+      DATABASE_URL: "sqlite:////app/data/db.sqlite3"
+
+volumes:
+  sqlite_data:

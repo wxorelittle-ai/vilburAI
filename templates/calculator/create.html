@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Калькулятор себестоимости — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+    <a href="{% url 'calculator:list' %}" class="text-sm text-steel hover:text-navy">← История расчётов</a>
+    <h1 class="text-2xl font-bold text-navy mt-2 mb-2">Калькулятор себестоимости</h1>
+    <p class="text-sm text-steel mb-6">
+        Узнайте, ниже какой цены работать нельзя, и сколько взять, чтобы не остаться в минусе.
+    </p>
+
+    {% if not limit_info.unlimited %}
+        <p class="text-sm mb-6 text-steel">
+            Расчётов в этом месяце: {{ limit_info.used }} из {{ limit_info.limit }}
+        </p>
+    {% endif %}
+
+    <div class="mb-5">
+        <p class="text-xs text-steel mb-2">Шаблоны быстрого выбора:</p>
+        <div class="flex flex-wrap gap-2">
+            <button type="button" data-tpl='{"id_ploshad":"38","id_tip_remonta":"komfort"}' class="tpl-chip text-sm px-3 py-1.5 rounded-full bg-white border border-sand-deep text-grafit hover:border-terracotta transition">Ремонт 1-комнатной</button>
+            <button type="button" data-tpl='{"id_ploshad":"60","id_tip_remonta":"econom"}' class="tpl-chip text-sm px-3 py-1.5 rounded-full bg-white border border-sand-deep text-grafit hover:border-terracotta transition">Электрика в новостройке</button>
+            <button type="button" data-tpl='{"id_ploshad":"6","id_tip_remonta":"komfort"}' class="tpl-chip text-sm px-3 py-1.5 rounded-full bg-white border border-sand-deep text-grafit hover:border-terracotta transition">Замена сантехники</button>
+        </div>
+    </div>
+
+    <p data-autosave-note class="hidden text-xs text-[#7A5A2E] mb-3">↺ Черновик восстановлен. <button type="button" data-autosave-clear class="underline">Очистить</button></p>
+
+    <form method="post" class="space-y-5" data-autosave="raschet">
+        {% csrf_token %}
+        {% for field in form %}
+        <div>
+            <label class="block text-sm font-medium text-grafit mb-1" for="{{ field.id_for_label }}">
+                {{ field.label }}
+            </label>
+            {{ field }}
+            {% if field.help_text %}<p class="text-xs text-steel/70 mt-1">{{ field.help_text }}</p>{% endif %}
+            {% for error in field.errors %}<p class="text-xs text-red-600 mt-1">{{ error }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+
+        <button type="submit"
+                class="w-full bg-accent hover:bg-accent-dark transition text-white font-bold text-lg py-4 rounded-xl min-h-[60px]">
+            Рассчитать
+        </button>
+    </form>
+</div>
+
+<script>
+    document.querySelectorAll('input, select').forEach(el => {
+        el.classList.add('w-full', 'border', 'border-sand-deep', 'rounded-lg', 'px-3', 'py-2', 'min-h-[48px]', 'text-sm', 'focus:outline-none', 'focus:ring-2', 'focus:ring-accent');
+    });
+    // Шаблоны быстрого выбора (раздел 7.4 ТЗ): подставляют площадь и тип ремонта
+    document.querySelectorAll('.tpl-chip').forEach(chip => chip.addEventListener('click', () => {
+        const data = JSON.parse(chip.getAttribute('data-tpl'));
+        Object.entries(data).forEach(([id, val]) => {
+            const el = document.getElementById(id);
+            if (el) el.value = val;
+        });
+    }));
+</script>
+{% endblock %}

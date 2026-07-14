@@ -1,0 +1,25 @@
+[Unit]
+Description=Бригадир.Про — Gunicorn
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=brigadir
+Group=www-data
+WorkingDirectory=/opt/brigadir_pro
+EnvironmentFile=/opt/brigadir_pro/.env
+RuntimeDirectory=brigadir_pro
+ExecStart=/opt/brigadir_pro/venv/bin/gunicorn -c /opt/brigadir_pro/deploy/gunicorn.conf.py config.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+
+# Базовое ужесточение (раздел 8 ТЗ — безопасность)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

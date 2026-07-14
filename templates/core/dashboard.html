@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Личный кабинет — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 grid lg:grid-cols-[230px_1fr] gap-8">
+
+    <!-- Sidebar -->
+    <aside class="lg:sticky lg:top-24 h-fit">
+        <nav class="bg-white rounded-2xl border border-sand-deep shadow-card p-3 space-y-1">
+            <a href="{% url 'core:dashboard' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-grafit text-white text-sm font-semibold">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber"></span> Дашборд
+            </a>
+            <a href="{% url 'documents:list' %}" class="block px-4 py-3 rounded-xl text-steel text-sm font-medium hover:bg-sand hover:text-grafit transition">Документы</a>
+            <a href="{% url 'calculator:list' %}" class="block px-4 py-3 rounded-xl text-steel text-sm font-medium hover:bg-sand hover:text-grafit transition">Калькулятор</a>
+            <a href="{% url 'smety:list' %}" class="block px-4 py-3 rounded-xl text-steel text-sm font-medium hover:bg-sand hover:text-grafit transition">Сметы</a>
+            <a href="{% url 'objekty:list' %}" class="block px-4 py-3 rounded-xl text-steel text-sm font-medium hover:bg-sand hover:text-grafit transition">Объекты</a>
+            <a href="{% url 'billing:plans' %}" class="block px-4 py-3 rounded-xl text-steel text-sm font-medium hover:bg-sand hover:text-grafit transition">Тарифы</a>
+            <a href="{% url 'core:profile' %}" class="block px-4 py-3 rounded-xl text-steel text-sm font-medium hover:bg-sand hover:text-grafit transition">Профиль</a>
+        </nav>
+    </aside>
+
+    <!-- Main -->
+    <div>
+        <h1 class="font-display text-3xl font-bold text-grafit mb-2">Привет, {{ brigada.nazvanie }}!</h1>
+        <div class="flex flex-wrap items-center gap-2 text-sm mb-8">
+            <span class="inline-flex items-center gap-2 rounded-full bg-white border border-sand-deep px-3 py-1 text-grafit font-semibold shadow-card">
+                <span class="w-1.5 h-1.5 rounded-full bg-terracotta"></span> Тариф: {{ brigada.tarif_label }}
+            </span>
+            {% if brigada.data_okonchaniya_tarifa %}
+                <span class="text-steel">действует до {{ brigada.data_okonchaniya_tarifa|date:"d.m.Y" }}</span>
+            {% endif %}
+            {% if brigada.tarif == 'start' %}
+                <a href="{% url 'billing:plans' %}" class="text-terracotta font-semibold hover:text-accent-dark">Расширить возможности →</a>
+            {% endif %}
+        </div>
+
+        <div class="grid sm:grid-cols-3 gap-4 mb-10">
+            <div class="rounded-2xl border border-sand-deep bg-white p-6 shadow-card">
+                <p class="text-sm text-steel mb-1">Документов создано</p>
+                <p class="font-display text-4xl font-extrabold text-grafit">{{ stats.dokumentov_sozdano }}</p>
+            </div>
+            <div class="rounded-2xl border border-sand-deep bg-white p-6 shadow-card">
+                <p class="text-sm text-steel mb-1">Расчётов сделано</p>
+                <p class="font-display text-4xl font-extrabold text-grafit">{{ stats.raschetov_sdelano }}</p>
+            </div>
+            <div class="rounded-2xl border border-sand-deep bg-white p-6 shadow-card">
+                <p class="text-sm text-steel mb-1">Смет создано</p>
+                <p class="font-display text-4xl font-extrabold text-grafit">{{ stats.smet_sozdano }}</p>
+            </div>
+        </div>
+
+        <h2 class="font-display text-lg font-bold text-grafit mb-4">Быстрые действия</h2>
+        <div class="grid sm:grid-cols-3 gap-4">
+            <a href="{% url 'documents:create' 'dogovor' %}" class="u-lift rounded-2xl bg-terracotta text-white p-6 font-bold text-center hover:bg-accent-dark transition min-h-[64px] flex items-center justify-center shadow-lift">
+                + Новый договор
+            </a>
+            <a href="{% url 'calculator:create' %}" class="u-lift rounded-2xl bg-grafit text-white p-6 font-bold text-center hover:bg-grafit-700 transition min-h-[64px] flex items-center justify-center shadow-card">
+                Рассчитать себестоимость
+            </a>
+            <a href="{% url 'smety:create' %}" class="u-lift rounded-2xl bg-white border-2 border-grafit text-grafit p-6 font-bold text-center hover:bg-sand transition min-h-[64px] flex items-center justify-center shadow-card">
+                Собрать смету
+            </a>
+        </div>
+
+        <div class="mt-10 rounded-2xl bg-white border border-sand-deep p-6 shadow-card flex items-start gap-4">
+            <span class="brandmark shrink-0">✓</span>
+            <p class="text-sm text-steel leading-relaxed">
+                Все основные модули MVP подключены: <span class="text-grafit font-semibold">документы, калькулятор, сметы и тарифы</span>.
+                Начните с договора на ближайший объект — это займёт пару минут.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

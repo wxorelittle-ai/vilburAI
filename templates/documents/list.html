@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}История документов — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+    <div class="flex items-center justify-between mb-8 flex-wrap gap-3">
+        <h1 class="text-2xl font-bold text-navy">История документов</h1>
+        <a href="{% url 'documents:choose_type' %}"
+           class="bg-accent hover:bg-accent-dark transition text-white font-bold px-5 py-3 rounded-xl min-h-[48px] flex items-center">
+            + Новый документ
+        </a>
+    </div>
+
+    {% if dokumenty %}
+    <div class="rounded-2xl border border-sand-deep bg-white overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-sand text-steel text-left">
+                <tr>
+                    <th class="px-4 py-3">№</th>
+                    <th class="px-4 py-3">Тип</th>
+                    <th class="px-4 py-3">Заказчик</th>
+                    <th class="px-4 py-3">Дата</th>
+                    <th class="px-4 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-sand-deep">
+                {% for d in dokumenty %}
+                <tr>
+                    <td class="px-4 py-3 font-medium text-navy">{{ d.nomer }}</td>
+                    <td class="px-4 py-3">{{ d.get_tip_display }}</td>
+                    <td class="px-4 py-3">{{ d.zakazchik }}</td>
+                    <td class="px-4 py-3 text-steel">{{ d.data_sozdaniya|date:"d.m.Y" }}</td>
+                    <td class="px-4 py-3 text-right">
+                        <a href="{% url 'documents:detail' d.pk %}" class="text-navy font-semibold hover:text-accent">Открыть →</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="rounded-2xl bg-white border border-sand-deep p-8 text-center">
+        <p class="text-grafit mb-4">Пока нет ни одного документа.</p>
+        <a href="{% url 'documents:choose_type' %}" class="text-navy font-semibold underline">Создать первый →</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

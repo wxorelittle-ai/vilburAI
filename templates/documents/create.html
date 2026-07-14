@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ tip_label }} — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+    <a href="{% url 'documents:choose_type' %}" class="text-sm text-steel hover:text-navy">← Выбрать другой тип</a>
+    <h1 class="text-2xl font-bold text-navy mt-2 mb-2">{{ tip_label }}</h1>
+
+    {% if not limit_info.unlimited %}
+        <p class="text-sm mb-6 {% if limit_info.exceeded %}text-red-600{% else %}text-steel{% endif %}">
+            Использовано документов в этом месяце: {{ limit_info.used }} из {{ limit_info.limit }}
+            {% if limit_info.exceeded %}— <a href="{% url 'billing:plans' %}" class="underline font-semibold">оформите подписку</a>, чтобы продолжить{% endif %}
+        </p>
+    {% else %}
+        <p class="text-sm text-steel mb-6">Документов в этом месяце: безлимит по вашему тарифу.</p>
+    {% endif %}
+
+    <p data-autosave-note class="hidden text-xs text-[#7A5A2E] mb-3">↺ Черновик восстановлен. <button type="button" data-autosave-clear class="underline">Очистить</button></p>
+
+    <form method="post" class="space-y-5" data-autosave="dokument">
+        {% csrf_token %}
+
+        {% for field in form %}
+        <div>
+            <label class="block text-sm font-medium text-grafit mb-1" for="{{ field.id_for_label }}">
+                {{ field.label }}
+            </label>
+            {{ field }}
+            {% for error in field.errors %}
+                <p class="text-xs text-red-600 mt-1">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endfor %}
+
+        {% if formset %}
+        <div>
+            <label class="block text-sm font-medium text-grafit mb-2">Позиции работ</label>
+            {{ formset.management_form }}
+            <div id="pozicii-rows" class="space-y-3">
+                {% for pform in formset %}
+                <div class="pozicia-row grid grid-cols-12 gap-2 items-start border border-sand-deep rounded-lg p-3">
+                    {% for hidden in pform.hidden_fields %}{{ hidden }}{% endfor %}
+                    <div class="col-span-5">{{ pform.nazvanie }}</div>
+                    <div class="col-span-2">{{ pform.edinica }}</div>
+                    <div class="col-span-2">{{ pform.kolvo }}</div>
+                    <div class="col-span-2">{{ pform.cena }}</div>
+                    <div class="col-span-1 pt-3">{% if pform.DELETE %}{{ pform.DELETE }}<span class="text-xs text-steel/70">✕</span>{% endif %}</div>
+                    {% for error in pform.non_field_errors %}<p class="col-span-12 text-xs text-red-600">{{ error }}</p>{% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" id="add-row-btn"
+                    class="mt-3 text-sm font-semibold text-navy border border-navy rounded-lg px-4 py-2 hover:bg-sand">
+                + Добавить строку
+            </button>
+        </div>
+        {% endif %}
+
+        <button type="submit"
+                class="w-full bg-accent hover:bg-accent-dark transition text-white font-bold text-lg py-4 rounded-xl min-h-[60px]">
+            Создать документ и сформировать PDF
+        </button>
+    </form>
+</div>
+
+<script>
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+        if (el.type === 'checkbox') return;
+        el.classList.add('w-full', 'border', 'border-sand-deep', 'rounded-lg', 'px-3', 'py-2', 'min-h-[44px]', 'text-sm', 'focus:outline-none', 'focus:ring-2', 'focus:ring-accent');
+    });
+
+    // Динамическое добавление строк для таблицы позиций (Акт ВКР) без перезагрузки страницы.
+    const addBtn = document.getElementById('add-row-btn');
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            const totalFormsInput = document.querySelector('input[name$="-TOTAL_FORMS"]');
+            const rowsContainer = document.getElementById('pozicii-rows');
+            const rows = rowsContainer.querySelectorAll('.pozicia-row');
+            const lastRow = rows[rows.length - 1];
+            const newIndex = rows.length;
+
+            const newRow = lastRow.cloneNode(true);
+            newRow.querySelectorAll('input').forEach(input => {
+                const name = input.getAttribute('name');
+                if (!name) return;
+                const newName = name.replace(/-\d+-/, `-${newIndex}-`);
+                const newId = 'id_' + newName;
+                input.setAttribute('name', newName);
+                input.setAttribute('id', newId);
+                if (input.type !== 'checkbox') input.value = '';
+                else input.checked = false;
+            });
+            rowsContainer.appendChild(newRow);
+            totalFormsInput.value = newIndex + 1;
+        });
+    }
+</script>
+{% endblock %}
