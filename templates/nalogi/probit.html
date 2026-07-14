@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Пробить чек — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 sm:px-6 py-12">
+    <a href="{% url 'nalogi:glavnaya' %}" class="text-sm text-steel hover:text-terracotta">← Налоги и чеки</a>
+    <h1 class="font-display text-2xl font-bold text-grafit mt-2 mb-2">Пробить чек ФНС</h1>
+    {% if limit != None %}<p class="text-sm text-steel mb-6">Чеков в этом месяце: {{ ispolzovano }} из {{ limit }}</p>{% endif %}
+
+    {% if dokument %}
+    <div class="rounded-xl bg-white border border-sand-deep text-sm px-4 py-3 mb-5 text-steel">
+        Автозаполнение из документа <span class="font-semibold text-grafit">№{{ dokument.nomer }}</span> ({{ dokument.zakazchik }}).
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-5 bg-white border border-sand-deep rounded-2xl shadow-card p-6 sm:p-8">
+        {% csrf_token %}
+        {% if dokument %}<input type="hidden" name="dokument_id" value="{{ dokument.pk }}">{% endif %}
+        <div>
+            <label class="block text-sm font-medium text-grafit mb-1.5">Сумма чека, ₽</label>
+            <input type="number" step="0.01" name="summa" required value="{{ prefill.summa|default:'' }}"
+                   class="w-full bg-sand/40 border border-sand-deep rounded-lg px-4 min-h-[48px] text-grafit">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-grafit mb-1.5">Назначение</label>
+            <input type="text" name="naznachenie" value="{{ prefill.naznachenie|default:'Оплата за работы' }}"
+                   class="w-full bg-sand/40 border border-sand-deep rounded-lg px-4 min-h-[48px] text-grafit">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-grafit mb-1.5">Телефон заказчика (для отправки чека)</label>
+            <input type="tel" name="telefon" value="{{ prefill.telefon|default:'' }}" placeholder="+79991234567"
+                   class="w-full bg-sand/40 border border-sand-deep rounded-lg px-4 min-h-[48px] text-grafit">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-grafit mb-1.5">Email заказчика (необязательно)</label>
+            <input type="email" name="email" placeholder="client@mail.ru"
+                   class="w-full bg-sand/40 border border-sand-deep rounded-lg px-4 min-h-[48px] text-grafit">
+        </div>
+        <button type="submit" class="w-full bg-terracotta hover:bg-accent-dark transition text-white font-bold text-lg py-4 rounded-xl">
+            Пробить чек{% if demo %} (демо){% endif %}
+        </button>
+    </form>
+</div>
+{% endblock %}

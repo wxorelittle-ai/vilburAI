@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Налоги и чеки — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+            <h1 class="font-display text-3xl font-bold text-grafit">Налоги и чеки</h1>
+            <p class="text-sm text-steel mt-1">Пробивайте чеки ФНС и следите за налогом самозанятого.</p>
+        </div>
+        <a href="{% url 'nalogi:probit' %}" class="bg-terracotta hover:bg-accent-dark transition text-white font-bold px-5 py-3 rounded-xl min-h-[48px] flex items-center shadow-lift">
+            + Пробить чек
+        </a>
+    </div>
+
+    {% if napominanie_tip %}
+    <div class="rounded-xl border px-4 py-3 mb-5 text-sm
+        {% if napominanie_tip == 'segodnya' %}bg-[#F7E7E1] border-[#E7C3B6] text-accent-dark{% else %}bg-[#FBF3E5] border-[#EAD8BC] text-[#7A5A2E]{% endif %}">
+        ⏰ {{ napominanie_tekst }}
+    </div>
+    {% endif %}
+
+    {% if demo %}
+    <div class="rounded-xl bg-[#FBF3E5] border border-[#EAD8BC] text-[#7A5A2E] text-sm px-4 py-3 mb-5">
+        Демо-режим: ключ ФНС не настроен — чеки пробиваются локально, без реальной регистрации дохода.
+        Добавьте <code class="bg-white/60 px-1 rounded">FNS_API_KEY</code> в <code class="bg-white/60 px-1 rounded">.env</code>.
+    </div>
+    {% endif %}
+
+    <!-- Сводка за месяц -->
+    <div class="grid sm:grid-cols-4 gap-3 mb-8">
+        <div class="rounded-2xl bg-white border border-sand-deep p-5 shadow-card sm:col-span-1">
+            <p class="text-xs text-steel mb-1">Доход за месяц</p>
+            <p class="font-display text-2xl font-extrabold text-grafit">{{ svodka.dohod }} ₽</p>
+        </div>
+        <div class="rounded-2xl bg-white border border-sand-deep p-5 shadow-card">
+            <p class="text-xs text-steel mb-1">Налог 4% (с физлиц)</p>
+            <p class="font-display text-2xl font-extrabold text-grafit">{{ svodka.nalog_4 }} ₽</p>
+        </div>
+        <div class="rounded-2xl bg-white border border-sand-deep p-5 shadow-card">
+            <p class="text-xs text-steel mb-1">Налог 6% (с ИП/юрлиц)</p>
+            <p class="font-display text-2xl font-extrabold text-grafit">{{ svodka.nalog_6 }} ₽</p>
+        </div>
+        <div class="rounded-2xl bg-white border border-sand-deep p-5 shadow-card flex flex-col justify-between">
+            <p class="text-xs text-steel mb-1">Статус налога</p>
+            {% if svodka.otchet and svodka.otchet.status == 'oplachen' %}
+                <span class="text-sm font-bold text-[#3B5A2E]">✓ Оплачен</span>
+            {% else %}
+                <form method="post" action="{% url 'nalogi:oplatit' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full text-sm font-semibold text-white bg-grafit hover:bg-grafit-700 rounded-lg px-3 py-2">Отметить оплаченным</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h2 class="font-display font-bold text-grafit">История чеков</h2>
+        <div class="flex items-center gap-3 text-sm">
+            {% if limit != None %}<span class="text-steel">Чеков в этом месяце: {{ ispolzovano }} из {{ limit }}</span>{% else %}<span class="text-steel">Чеков в этом месяце: {{ ispolzovano }} (безлимит)</span>{% endif %}
+            <a href="{% url 'nalogi:excel' %}" class="text-terracotta hover:text-accent-dark font-semibold">Excel для бухгалтера →</a>
+        </div>
+    </div>
+
+    {% if cheki %}
+    <div class="rounded-2xl border border-sand-deep bg-white overflow-hidden shadow-card overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-sand text-steel text-left">
+                <tr><th class="px-4 py-3">Дата</th><th class="px-4 py-3">Сумма</th><th class="px-4 py-3">Назначение</th><th class="px-4 py-3">Заказчик</th><th class="px-4 py-3">Статус</th></tr>
+            </thead>
+            <tbody class="divide-y divide-sand-deep">
+                {% for c in cheki %}
+                <tr>
+                    <td class="px-4 py-3 text-steel">{{ c.data|date:"d.m.Y H:i" }}</td>
+                    <td class="px-4 py-3 font-medium text-grafit">{{ c.summa }} ₽</td>
+                    <td class="px-4 py-3 text-steel">{{ c.naznachenie }}</td>
+                    <td class="px-4 py-3 text-steel">{{ c.telefon_zakazchika|default:"—" }}</td>
+                    <td class="px-4 py-3">
+                        {% if c.status == 'otpravlen' %}
+                            <span class="text-xs font-semibold text-[#3B5A2E] bg-[#EAF1E6] rounded px-2 py-1">Пробит{% if c.demo_rezhim %} (демо){% endif %}</span>
+                        {% elif c.status == 'oshibka' %}
+                            <span class="text-xs font-semibold text-accent-dark bg-[#F7E7E1] rounded px-2 py-1">Ошибка</span>
+                        {% else %}
+                            <span class="text-xs font-semibold text-steel bg-sand-deep rounded px-2 py-1">Создан</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="rounded-2xl bg-white border border-sand-deep p-10 text-center shadow-card">
+        <p class="text-steel mb-3">Чеков пока нет.</p>
+        <a href="{% url 'nalogi:probit' %}" class="text-terracotta font-semibold hover:text-accent-dark">Пробить первый чек →</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

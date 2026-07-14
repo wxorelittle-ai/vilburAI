@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'objekty.apps.ObjektyConfig',      # Модуль J — контроль объектов + AI-ассистент (Addendum №2)
     'podpis.apps.PodpisConfig',        # Модуль I — простая электронная подпись (ПЭП)
     'fotoakty.apps.FotoaktyConfig',    # Модуль G — фото-акты с геолокацией
+    'nalogi.apps.NalogiConfig',        # Модуль D — налоги и чеки ФНС
 ]
 
 MIDDLEWARE = [
@@ -145,6 +146,10 @@ ANTHROPIC_MODEL = config('ANTHROPIC_MODEL', default='claude-sonnet-4-6')
 # Без ключа коды подписания показываются на экране (демо), с ключом — реальная СМС.
 SMS_API_KEY = config('SMS_API_KEY', default='')
 
+# --- ФНС «Мой налог» (Модуль D, раздел 6.4 ТЗ) --------------------------------
+# Без ключа чеки пробиваются в демо-режиме (локально), с ключом — реальная ФНС.
+FNS_API_KEY = config('FNS_API_KEY', default='')
+
 # --- Безопасность в проде (включается через .env при DEBUG=False) --------------
 
 if not DEBUG:
@@ -162,8 +167,8 @@ if not DEBUG:
 # objekty/ai_zaprosy — Модуль J (раздел 5 ТЗ): «Старт»/«Самозанятый» — недоступен,
 # «Бригадир» — до 3 объектов и 10 AI-запросов/мес, «PRO» — безлимит. None = безлимит.
 TARIFF_LIMITS = {
-    'start': {'dokumenty': 1, 'raschety': 3, 'smety': 0, 'objekty': 0, 'ai_zaprosy': 0, 'label': 'Старт', 'price': 0},
-    'samozanyaty': {'dokumenty': 10, 'raschety': None, 'smety': 0, 'objekty': 0, 'ai_zaprosy': 0, 'label': 'Самозанятый', 'price': 490},
-    'brigadir': {'dokumenty': None, 'raschety': None, 'smety': 20, 'objekty': 3, 'ai_zaprosy': 10, 'label': 'Бригадир', 'price': 990},
-    'pro': {'dokumenty': None, 'raschety': None, 'smety': None, 'objekty': None, 'ai_zaprosy': None, 'label': 'PRO', 'price': 1990},
+    'start': {'dokumenty': 1, 'raschety': 3, 'smety': 0, 'objekty': 0, 'ai_zaprosy': 0, 'cheki': 0, 'label': 'Старт', 'price': 0},
+    'samozanyaty': {'dokumenty': 10, 'raschety': None, 'smety': 0, 'objekty': 0, 'ai_zaprosy': 0, 'cheki': 5, 'label': 'Самозанятый', 'price': 490},
+    'brigadir': {'dokumenty': None, 'raschety': None, 'smety': 20, 'objekty': 3, 'ai_zaprosy': 10, 'cheki': None, 'label': 'Бригадир', 'price': 990},
+    'pro': {'dokumenty': None, 'raschety': None, 'smety': None, 'objekty': None, 'ai_zaprosy': None, 'cheki': None, 'label': 'PRO', 'price': 1990},
 }

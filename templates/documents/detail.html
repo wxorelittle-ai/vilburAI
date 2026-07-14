@@ -32,6 +32,17 @@
         {% endif %}
     </div>
 
+    {% if d.tip == 'dogovor' or d.tip == 'raspiska' or d.tip == 'akt_vkr' %}
+    {% if current_brigada.effective_tarif != 'start' %}
+    <div class="mb-6">
+        <a href="{% url 'nalogi:probit' %}?dokument={{ d.pk }}"
+           class="inline-flex items-center gap-2 text-sm font-semibold text-grafit border border-grafit rounded-lg px-4 py-2.5 hover:bg-sand transition">
+            Пробить чек ФНС по документу →
+        </a>
+    </div>
+    {% endif %}
+    {% endif %}
+
     {% with p=d.podpisi.first %}
     <div class="rounded-2xl border border-sand-deep bg-white p-5 mb-6 shadow-card flex items-center justify-between flex-wrap gap-3">
         <div>
