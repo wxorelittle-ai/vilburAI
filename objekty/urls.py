@@ -6,6 +6,7 @@ app_name = 'objekty'
 
 urlpatterns = [
     path('', views.obekty_list, name='list'),
+    path('postavki/', views.postavki, name='postavki'),
     path('new/', views.obekt_create, name='create'),
     path('<int:pk>/', views.obekt_detail, name='detail'),
 ]

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Поставки материалов — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+            <a href="{% url 'objekty:list' %}" class="text-sm text-steel hover:text-terracotta">← Мои объекты</a>
+            <h1 class="font-display text-3xl font-bold text-grafit mt-1">Поставки материалов</h1>
+            <p class="text-sm text-steel mt-1">Что просрочено, что задерживается и что пора заказать — по всем объектам.</p>
+        </div>
+        <div class="text-right">
+            <p class="font-display text-3xl font-extrabold {% if trebuyut_deystviya %}text-terracotta{% else %}text-grafit{% endif %}">{{ trebuyut_deystviya }}</p>
+            <p class="text-xs text-steel">требуют действия · всего {{ vsego }} · на объекте {{ na_obekte_count }}</p>
+        </div>
+    </div>
+
+    {% for key, title, tone, hint, items in gruppy %}
+    {% if items %}
+    <section class="mb-7">
+        <div class="flex items-center gap-2 mb-1">
+            <span class="w-2.5 h-2.5 rounded-full
+                {% if tone == 'red' %}bg-terracotta{% elif tone == 'amber' %}bg-amber{% elif tone == 'blue' %}bg-[#5B7DA6]{% else %}bg-steel{% endif %}"></span>
+            <h2 class="font-display font-bold text-grafit">{{ title }}</h2>
+            <span class="text-xs font-semibold text-steel bg-sand-deep rounded-full px-2 py-0.5">{{ items|length }}</span>
+        </div>
+        <p class="text-xs text-steel mb-3">{{ hint }}</p>
+
+        <div class="rounded-2xl border-2 bg-white overflow-hidden shadow-card overflow-x-auto
+            {% if tone == 'red' %}border-terracotta{% elif tone == 'amber' %}border-amber{% else %}border-sand-deep{% endif %}">
+            <table class="w-full text-sm">
+                <thead class="bg-sand text-steel text-left">
+                    <tr>
+                        <th class="px-4 py-3">Материал</th>
+                        <th class="px-4 py-3">Объект / этап</th>
+                        <th class="px-4 py-3">Крайняя дата заказа</th>
+                        <th class="px-4 py-3">{% if key == 'ozhidaetsya' or key == 'zaderzhka_postavki' %}Ожидаемая поставка{% else %}Осталось{% endif %}</th>
+                        <th class="px-4 py-3">Статус / действие</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-sand-deep">
+                    {% for m in items %}
+                    <tr>
+                        <td class="px-4 py-3 font-medium text-grafit">{{ m.nazvanie }}</td>
+                        <td class="px-4 py-3 text-steel">
+                            <a href="{% url 'objekty:detail' m.objekt.pk %}?tab=materialy" class="hover:text-terracotta">{{ m.objekt.nazvanie|truncatechars:34 }}</a>
+                            <span class="block text-xs text-steel/70">{{ m.etap.nazvanie }}</span>
+                        </td>
+                        <td class="px-4 py-3 {% if m.prosrocheno %}text-accent-dark font-bold{% else %}text-steel{% endif %}">
+                            {{ m.data_zakaza_kraynyaya|date:"d.m.Y"|default:"—" }}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if key == 'ozhidaetsya' or key == 'zaderzhka_postavki' %}
+                                <span class="{% if m.postavka_zaderzhana %}text-accent-dark font-bold{% else %}text-steel{% endif %}">{{ m.data_postavki_ozhidaemaya|date:"d.m.Y"|default:"—" }}</span>
+                            {% elif m.dney_do_krayney_daty != None %}
+                                {% if m.dney_do_krayney_daty < 0 %}
+                                    <span class="text-accent-dark font-bold">просрочено на {{ m.dney_do_krayney_daty|cut:"-" }} дн.</span>
+                                {% else %}
+                                    <span class="{% if m.dney_do_krayney_daty <= 7 %}text-[#7A5A2E] font-semibold{% else %}text-steel{% endif %}">{{ m.dney_do_krayney_daty }} дн.</span>
+                                {% endif %}
+                            {% else %}—{% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <form method="post" class="flex items-center gap-1">
+                                {% csrf_token %}
+                                <input type="hidden" name="material_id" value="{{ m.pk }}">
+                                <select name="status" onchange="this.form.submit()"
+                                        class="text-xs border border-sand-deep rounded-lg px-2 py-1 bg-white text-grafit">
+                                    {% for val, label in MATERIAL_STATUSY %}
+                                    <option value="{{ val }}" {% if m.status == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+    {% endfor %}
+
+    {% if vsego == 0 %}
+    <div class="rounded-2xl bg-white border border-sand-deep p-10 text-center shadow-card">
+        <p class="text-steel">По объектам пока нет материалов. Добавьте их во вкладке «Материалы» внутри объекта —
+            крайняя дата заказа посчитается автоматически.</p>
+    </div>
+    {% elif trebuyut_deystviya == 0 %}
+    <div class="rounded-2xl bg-[#EAF1E6] border border-[#CFE0C4] p-6 text-center text-[#3B5A2E] font-semibold">
+        ✓ Все поставки под контролем — просроченных заказов и задержек нет.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

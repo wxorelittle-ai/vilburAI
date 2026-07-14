@@ -170,6 +170,8 @@
         <p class="text-sm text-steel">Материалов пока нет. Крайняя дата заказа считается от даты начала этапа за вычетом сроков производства, доставки и буфера.</p>
         {% endif %}
 
+        <a href="{% url 'objekty:postavki' %}" class="inline-block text-sm text-terracotta hover:text-accent-dark font-semibold">Все поставки по объектам →</a>
+
         {% include "objekty/_addform.html" with title="Добавить материал" action="add_material" form=material_form %}
     </section>
     {% endif %}

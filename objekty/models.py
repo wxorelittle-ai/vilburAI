@@ -275,8 +275,58 @@ class Material(models.Model):
         return bool(kraynyaya and timezone.localdate() > kraynyaya)
 
     @property
+    def dney_do_krayney_daty(self):
+        """Сколько дней осталось до крайней даты заказа (отрицательное — просрочено)."""
+        kraynyaya = self.data_zakaza_kraynyaya
+        if not kraynyaya:
+            return None
+        return (kraynyaya - timezone.localdate()).days
+
+    @property
+    def data_postavki_ozhidaemaya(self):
+        """Ожидаемая дата поставки на объект = дата заказа + производство + доставка.
+        Считается для уже заказанных материалов (заказан / в пути)."""
+        if self.data_zakaza_fakt and self.status in (self.STATUS_ZAKAZAN, self.STATUS_V_PUTI):
+            return self.data_zakaza_fakt + timedelta(days=self.srok_proizvodstva_dney + self.srok_dostavki_dney)
+        return None
+
+    @property
+    def postavka_zaderzhana(self) -> bool:
+        """Заказанный материал, ожидаемая поставка которого уже просрочена, но он ещё не на объекте."""
+        d = self.data_postavki_ozhidaemaya
+        return bool(d and timezone.localdate() > d)
+
+    @property
+    def srochno_zakazat(self) -> bool:
+        """Ещё не заказан, крайняя дата — в ближайшие 7 дней (но ещё не просрочена)."""
+        if self.status != self.STATUS_NE_ZAKAZAN or self.prosrocheno:
+            return False
+        dney = self.dney_do_krayney_daty
+        return dney is not None and 0 <= dney <= 7
+
+    @property
     def status_display_effective(self) -> str:
-        return 'Просрочено' if self.prosrocheno else self.get_status_display()
+        if self.prosrocheno:
+            return 'Просрочен заказ'
+        if self.postavka_zaderzhana:
+            return 'Поставка задержана'
+        return self.get_status_display()
+
+    @property
+    def postavka_kategoriya(self):
+        """Категория для экрана поставок: prosrochen_zakaz / zaderzhka_postavki /
+        zakazat_srochno / ozhidaetsya / ne_zakazan / na_obekte."""
+        if self.status == self.STATUS_NA_OBEKTE:
+            return 'na_obekte'
+        if self.prosrocheno:
+            return 'prosrochen_zakaz'
+        if self.postavka_zaderzhana:
+            return 'zaderzhka_postavki'
+        if self.srochno_zakazat:
+            return 'zakazat_srochno'
+        if self.status in (self.STATUS_ZAKAZAN, self.STATUS_V_PUTI):
+            return 'ozhidaetsya'
+        return 'ne_zakazan'
 
 
 class OplataMontajnika(models.Model):

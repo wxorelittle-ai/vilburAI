@@ -43,6 +43,62 @@ def obekty_list(request):
 
 
 @login_required
+def postavki(request):
+    """Сводный экран поставок материалов по всем объектам бригады:
+    просроченные заказы, задержанные поставки, что заказать в ближайшие дни,
+    ожидаемые поставки. Раздел «Материалы» Модуля J (Addendum №2 ТЗ)."""
+    guard = _guard_module(request)
+    if guard:
+        return guard
+
+    if request.method == 'POST':
+        mat = get_object_or_404(
+            Material, pk=request.POST.get('material_id'), objekt__brigada=request.user.brigada,
+        )
+        new_status = request.POST.get('status')
+        if new_status in dict(Material.STATUS_CHOICES):
+            mat.status = new_status
+            if new_status == Material.STATUS_ZAKAZAN and not mat.data_zakaza_fakt:
+                mat.data_zakaza_fakt = timezone.localdate()
+            mat.save()
+            messages.success(request, 'Статус материала «%s» обновлён.' % mat.nazvanie)
+        return redirect('objekty:postavki')
+
+    materialy = (Material.objects
+                 .filter(objekt__brigada=request.user.brigada)
+                 .select_related('etap', 'objekt')
+                 .order_by('etap__plan_data_nachala'))
+
+    buckets = {'prosrochen_zakaz': [], 'zaderzhka_postavki': [], 'zakazat_srochno': [],
+               'ozhidaetsya': [], 'ne_zakazan': [], 'na_obekte': []}
+    for m in materialy:
+        buckets[m.postavka_kategoriya].append(m)
+    # ожидаемые — по ближайшей дате поставки
+    buckets['ozhidaetsya'].sort(key=lambda m: m.data_postavki_ozhidaemaya or timezone.localdate())
+
+    gruppy = [
+        ('prosrochen_zakaz', 'Просрочен заказ', 'red',
+         'Материал не заказан, а крайняя дата заказа уже прошла — этап встанет.'),
+        ('zaderzhka_postavki', 'Поставка задержана', 'red',
+         'Материал заказан, но ожидаемая дата поставки прошла, а его ещё нет на объекте.'),
+        ('zakazat_srochno', 'Заказать в ближайшие 7 дней', 'amber',
+         'Крайняя дата заказа наступает на этой неделе.'),
+        ('ozhidaetsya', 'Ожидаемые поставки', 'blue',
+         'Материалы заказаны или в пути — ждём доставку на объект.'),
+        ('ne_zakazan', 'Ещё не заказаны', 'steel',
+         'Заказ пока не горит, но держим на контроле.'),
+    ]
+    context = {
+        'gruppy': [(key, title, tone, hint, buckets[key]) for key, title, tone, hint in gruppy],
+        'na_obekte_count': len(buckets['na_obekte']),
+        'vsego': materialy.count(),
+        'trebuyut_deystviya': len(buckets['prosrochen_zakaz']) + len(buckets['zaderzhka_postavki']) + len(buckets['zakazat_srochno']),
+        'MATERIAL_STATUSY': Material.STATUS_CHOICES,
+    }
+    return render(request, 'objekty/postavki.html', context)
+
+
+@login_required
 def obekt_create(request):
     guard = _guard_module(request)
     if guard:

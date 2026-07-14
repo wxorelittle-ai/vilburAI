@@ -8,10 +8,16 @@
             <h1 class="font-display text-3xl font-bold text-grafit">Мои объекты</h1>
             <p class="text-sm text-steel mt-1">Контроль графика, материалов, оплаты и денег по каждому объекту.</p>
         </div>
-        <a href="{% url 'objekty:create' %}"
-           class="bg-terracotta hover:bg-accent-dark transition text-white font-bold px-5 py-3 rounded-xl min-h-[48px] flex items-center shadow-lift">
-            + Новый объект
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="{% url 'objekty:postavki' %}"
+               class="bg-white border-2 border-grafit text-grafit font-bold px-5 py-3 rounded-xl min-h-[48px] flex items-center hover:bg-sand transition">
+                Поставки материалов
+            </a>
+            <a href="{% url 'objekty:create' %}"
+               class="bg-terracotta hover:bg-accent-dark transition text-white font-bold px-5 py-3 rounded-xl min-h-[48px] flex items-center shadow-lift">
+                + Новый объект
+            </a>
+        </div>
     </div>
 
     {% if trebuyut_vnimaniya %}
