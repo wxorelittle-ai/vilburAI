@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'nalogi.apps.NalogiConfig',        # Модуль D — налоги и чеки ФНС
     'proverka.apps.ProverkaConfig',    # Модуль E — проверка заказчика
     'messengers.apps.MessengersConfig',  # Модуль F — WhatsApp / Telegram
+    'golos.apps.GolosConfig',          # Модуль H — голосовой ввод
 ]
 
 MIDDLEWARE = [

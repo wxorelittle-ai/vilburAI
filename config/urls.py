@@ -22,6 +22,7 @@ urlpatterns = [
     path('nalogi/', include('nalogi.urls')),
     path('proverka/', include('proverka.urls')),
     path('messengers/', include('messengers.urls')),
+    path('golos/', include('golos.urls')),
     path('', include('podpis.urls')),  # /sign/<token>/ (публично) и /podpis/document/<pk>/
     path('s/<slug:slug>/', public_smeta, name='public_smeta'),
 ]

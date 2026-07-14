@@ -26,7 +26,18 @@
         {% endfor %}
 
         <div>
-            <label class="block text-sm font-medium text-grafit mb-2">Позиции работ</label>
+            <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                <label class="block text-sm font-medium text-grafit">Позиции работ</label>
+                {% if current_brigada.effective_tarif == 'pro' %}
+                <button type="button" id="golos-btn"
+                        class="inline-flex items-center gap-2 text-sm font-semibold text-white bg-terracotta hover:bg-accent-dark rounded-lg px-4 py-2 transition">
+                    🎤 <span id="golos-label">Голосовой ввод</span>
+                </button>
+                {% else %}
+                <a href="{% url 'billing:plans' %}" class="text-xs text-steel hover:text-terracotta">🎤 Голосовой ввод — на тарифе PRO</a>
+                {% endif %}
+            </div>
+            <p id="golos-status" class="hidden text-xs text-[#7A5A2E] mb-2"></p>
 
             <div class="flex flex-wrap gap-2 mb-3 items-center bg-sand rounded-lg p-3">
                 <select id="baza-select" class="border border-sand-deep rounded-lg px-3 py-2 text-sm flex-1 min-w-[220px]">
@@ -113,5 +124,58 @@
                 select.value = '';
             });
     });
+
+    // --- Голосовой ввод (Модуль H): Web Speech API → разбор в позиции сметы ---
+    const golosBtn = document.getElementById('golos-btn');
+    if (golosBtn) {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const status = document.getElementById('golos-status');
+        const label = document.getElementById('golos-label');
+        const csrf = () => (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
+
+        async function dobavitPoziciyu(p) {
+            const container = document.getElementById('raboty-rows');
+            const uroven = document.getElementById('id_urovne_cen').value || 'srednyaya';
+            const index = window.rowCounter;
+            const url = p.baza_id
+                ? `{% url 'smety:add_row_from_baza' %}?index=${index}&baza_id=${p.baza_id}&uroven=${uroven}`
+                : `{% url 'smety:add_row' %}?index=${index}`;
+            const html = await fetch(url).then(r => r.text());
+            container.insertAdjacentHTML('beforeend', html);
+            const row = container.lastElementChild;
+            styleNewRow(row);
+            const set = (suf, val) => { const el = row.querySelector(`[name$="-${suf}"]`); if (el && val !== null && val !== '') el.value = val; };
+            if (!p.baza_id) { set('nazvanie', p.nazvanie); set('edinica', p.edinica); set('cena', p.cena); }
+            set('kolvo', p.kolvo);
+            bumpTotalForms();
+        }
+
+        golosBtn.addEventListener('click', () => {
+            if (!SR) { status.classList.remove('hidden'); status.textContent = 'Голосовой ввод не поддерживается этим браузером — откройте в Chrome.'; return; }
+            const rec = new SR(); rec.lang = 'ru-RU'; rec.interimResults = false; rec.maxAlternatives = 1;
+            label.textContent = 'Слушаю…';
+            status.classList.remove('hidden');
+            status.textContent = 'Говорите, например: «укладка плитки 40 квадратов, штукатурка стен 120 метров».';
+            rec.start();
+            rec.onresult = async (e) => {
+                const text = e.results[0][0].transcript;
+                status.textContent = 'Распознано: ' + text;
+                try {
+                    const resp = await fetch("{% url 'golos:raspoznat' %}", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                        body: JSON.stringify({ text, uroven: document.getElementById('id_urovne_cen').value || 'srednyaya' }),
+                    }).then(r => r.json());
+                    if (resp.ok) {
+                        for (const p of resp.pozicii) { await dobavitPoziciyu(p); }
+                        status.textContent = `Добавлено позиций: ${resp.pozicii.length}. Проверьте объёмы и цены.`;
+                    } else { status.textContent = resp.error || 'Не удалось разобрать речь.'; }
+                } catch (err) { status.textContent = 'Ошибка обработки: ' + err; }
+                label.textContent = 'Голосовой ввод';
+            };
+            rec.onerror = () => { label.textContent = 'Голосовой ввод'; status.textContent = 'Не удалось распознать. Попробуйте ещё раз.'; };
+            rec.onend = () => { label.textContent = 'Голосовой ввод'; };
+        });
+    }
 </script>
 {% endblock %}
