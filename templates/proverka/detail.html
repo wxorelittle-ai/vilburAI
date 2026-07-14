@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Результат проверки — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+    <a href="{% url 'proverka:glavnaya' %}" class="text-sm text-steel hover:text-terracotta">← Проверка заказчика</a>
+    <h1 class="font-display text-2xl font-bold text-grafit mt-2 mb-1">{{ p.znachenie }}</h1>
+    <p class="text-sm text-steel mb-6">{{ p.get_tip_poiska_display }} · {{ p.data|date:"d.m.Y H:i" }}{% if p.demo_rezhim %} · демо{% endif %}</p>
+
+    <div class="rounded-2xl border-2 p-6 mb-5
+        {% if p.risk_tone == 'red' %}border-terracotta bg-[#F7E7E1]{% elif p.risk_tone == 'amber' %}border-amber bg-[#FBF3E5]{% else %}border-[#CFE0C4] bg-[#EAF1E6]{% endif %}">
+        <p class="text-sm mb-1
+            {% if p.risk_tone == 'red' %}text-accent-dark{% elif p.risk_tone == 'amber' %}text-[#7A5A2E]{% else %}text-[#3B5A2E]{% endif %}">Уровень риска</p>
+        <p class="font-display text-3xl font-extrabold
+            {% if p.risk_tone == 'red' %}text-accent-dark{% elif p.risk_tone == 'amber' %}text-[#7A5A2E]{% else %}text-[#3B5A2E]{% endif %}">{{ p.get_status_riska_display }}</p>
+        <p class="text-sm mt-2 text-grafit">{{ p.prichina }}</p>
+    </div>
+
+    <div class="rounded-2xl bg-white border border-sand-deep p-6 mb-5 shadow-card">
+        <p class="font-display font-bold text-grafit mb-2">Рекомендация</p>
+        <p class="text-sm text-steel">{{ p.rekomendaciya }}</p>
+    </div>
+
+    {% if p.detali %}
+    <div class="rounded-2xl bg-white border border-sand-deep p-6 shadow-card">
+        <p class="font-display font-bold text-grafit mb-3">Детали проверки</p>
+        <dl class="text-sm space-y-1.5">
+            {% for key, val in p.detali.items %}
+            <div class="flex justify-between gap-4">
+                <dt class="text-steel">{{ key }}</dt>
+                <dd class="text-grafit font-medium text-right">{{ val }}</dd>
+            </div>
+            {% endfor %}
+        </dl>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Проверка заказчика — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <h1 class="font-display text-3xl font-bold text-grafit mb-1">Проверка заказчика</h1>
+    <p class="text-sm text-steel mb-6">Оцените риск неоплаты по ИНН или телефону до начала работ.</p>
+
+    {% if demo %}
+    <div class="rounded-xl bg-[#FBF3E5] border border-[#EAD8BC] text-[#7A5A2E] text-sm px-4 py-3 mb-5">
+        Демо-режим: ключ Контур/СПАРК не настроен — проверка идёт по внутреннему чёрному списку и
+        демонстрационной модели. Реальные данные включаются ключом <code class="bg-white/60 px-1 rounded">KONTUR_API_KEY</code>.
+    </div>
+    {% endif %}
+
+    <form method="post" class="bg-white border border-sand-deep rounded-2xl shadow-card p-6 mb-8">
+        {% csrf_token %}
+        <div class="grid sm:grid-cols-[160px_1fr_auto] gap-3 items-end">
+            <div>
+                <label class="block text-xs text-steel mb-1">Тип проверки</label>
+                <select name="tip_poiska" class="w-full bg-sand/40 border border-sand-deep rounded-lg px-3 py-2 min-h-[48px] text-grafit text-sm">
+                    <option value="telefon">По телефону</option>
+                    <option value="inn">По ИНН</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-steel mb-1">ИНН или телефон</label>
+                <input type="text" name="znachenie" required placeholder="+79991234567 или 7203123456"
+                       class="w-full bg-sand/40 border border-sand-deep rounded-lg px-4 min-h-[48px] text-grafit">
+            </div>
+            <button type="submit" class="bg-terracotta hover:bg-accent-dark transition text-white font-bold px-6 min-h-[48px] rounded-lg">Проверить</button>
+        </div>
+        {% if limit != None %}<p class="text-xs text-steel mt-3">Проверок в этом месяце: {{ ispolzovano }} из {{ limit }}</p>{% endif %}
+    </form>
+
+    <h2 class="font-display font-bold text-grafit mb-3">История проверок</h2>
+    {% if proverki %}
+    <div class="space-y-2">
+        {% for p in proverki %}
+        <a href="{% url 'proverka:detail' p.pk %}" class="flex items-center justify-between gap-3 bg-white border border-sand-deep rounded-xl px-4 py-3 shadow-card hover:border-terracotta transition">
+            <div>
+                <span class="font-medium text-grafit">{{ p.znachenie }}</span>
+                <span class="text-xs text-steel block">{{ p.get_tip_poiska_display }} · {{ p.data|date:"d.m.Y H:i" }}</span>
+            </div>
+            <span class="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full
+                {% if p.risk_tone == 'red' %}bg-[#F7E7E1] text-accent-dark{% elif p.risk_tone == 'amber' %}bg-[#FBF3E5] text-[#7A5A2E]{% else %}bg-[#EAF1E6] text-[#3B5A2E]{% endif %}">
+                {{ p.get_status_riska_display }} риск
+            </span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="rounded-2xl bg-white border border-sand-deep p-8 text-center shadow-card text-steel">Проверок пока нет.</div>
+    {% endif %}
+</div>
+{% endblock %}
