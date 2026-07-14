@@ -36,6 +36,7 @@ from proverka import service as proverka_service
 from messengers.models import WhatsAppOtpravka, TelegramUser
 from messengers import wa as wa_service
 from golos.models import GolosovayaKomanda
+from marketplace.models import Otzyv, IzlishekMateriala, Tender, TenderOtklik
 
 User = get_user_model()
 
@@ -88,6 +89,7 @@ class Command(BaseCommand):
         smety = self._estimates(brigada)
         self._objects(brigada, smety)
         self._addendum(brigada)
+        self._marketplace(brigada)
         self.stdout.write(self.style.SUCCESS(
             '\nДемо-данные созданы для бригады «%s». Вход: demo / Demo12345' % brigada.nazvanie
         ))
@@ -125,6 +127,10 @@ class Command(BaseCommand):
         NalogOtchet.objects.filter(brigada=brigada).delete()
         GolosovayaKomanda.objects.filter(brigada=brigada).delete()
         ChyornySpisok.objects.all().delete()
+        Otzyv.objects.filter(brigada=brigada).delete()
+        IzlishekMateriala.objects.filter(brigada=brigada).delete()
+        Tender.objects.filter(brigada=brigada).delete()
+        TenderOtklik.objects.filter(brigada=brigada).delete()
 
     # --------------------------------------------------------------- платежи
     def _payments(self, brigada):
@@ -544,6 +550,86 @@ class Command(BaseCommand):
 
         self.stdout.write('Addendum: чеков %d, проверок %d, подписей %d, WA %d, Telegram привязан, голос %d, фото %d'
                           % (n_chek, len(proverki_vhod), 5, 6, len(golos_texty), n_foto))
+
+    # ------------------------------------------------ Модуль 4 (маркетплейс)
+    def _marketplace(self, brigada):
+        # Дополнительные бригады-«конкуренты» для наполнения каталога/тендеров
+        firmy = [
+            ('mk_tmnrem', 'Бригада «Тюмень-Ремонт»', 'Тюмень', 'brigadir'),
+            ('mk_master72', 'Мастер-Групп 72', 'Тюмень', 'brigadir'),
+            ('mk_stroykom', 'СтройКом Тюмень', 'Тюменская область', 'samozanyaty'),
+            ('mk_elektro', 'ЭлектроСервис 72', 'Тюмень', 'pro'),
+            ('mk_otdelka', 'Отделка-Профи', 'Тюмень', 'start'),
+        ]
+        # чистим прежние демо-бригады маркетплейса
+        User.objects.filter(username__startswith='mk_').delete()
+
+        otzyv_texty = [
+            'Сделали ремонт в срок, без сюрпризов по цене. Рекомендую.',
+            'Договор, смета, акты — всё по-белому. Работой довольны.',
+            'Аккуратно, чисто, помогли с выбором материалов.',
+            'Небольшая задержка по срокам, но качество хорошее.',
+            'Всё чётко: предоплата, этапы, гарантия. Спасибо бригаде!',
+            'Профессионалы, приедут снова на второй объект.',
+        ]
+        vse = [brigada]
+        for uname, nazv, region, tarif in firmy:
+            u = User.objects.create_user(uname, password='Demo12345')
+            b = Brigada.objects.create(user=u, nazvanie=nazv, telefon='+7908%07d' % random.randint(0, 9999999),
+                                       region=region, tarif=tarif,
+                                       data_okonchaniya_tarifa=self.today + timedelta(days=60) if tarif != 'start' else None)
+            # пара документов, чтобы попасть в каталог и получить «подтверждён»
+            for _ in range(random.randint(2, 4)):
+                zak, tel = random.choice(ZAKAZCHIKI)
+                Dokument.objects.create(brigada=b, tip='dogovor', zakazchik=zak, zakazchik_telefon=tel,
+                                        adres_obekta=random.choice(ADRESA), summa=Decimal(random.randint(150, 600) * 1000),
+                                        srok_nachala=self.today, srok_okonchania=self.today + timedelta(days=30))
+            vse.append(b)
+
+        # Отзывы всем бригадам (включая демо-фирму)
+        for b in vse:
+            for _ in range(random.randint(3, 6)):
+                avtor = random.choice(ZAKAZCHIKI)[0].split()[0] + ' ' + random.choice(ZAKAZCHIKI)[0].split()[1][0] + '.'
+                Otzyv.objects.create(
+                    brigada=b, avtor_imya=avtor, ocenka=random.choice([5, 5, 5, 4, 4, 3]),
+                    tekst=random.choice(otzyv_texty), obekt=random.choice(ADRESA).split(', ', 1)[1][:40],
+                    podtverzhden=random.random() < 0.5,
+                )
+
+        # Биржа излишков
+        materialy = [
+            ('Плитка керамогранит 60×60', 'м²', 480), ('Ламинат 33 класс', 'м²', 650),
+            ('Гипсокартон Knauf 12.5мм', 'лист', 380), ('Профиль ПН 28×27', 'шт', 90),
+            ('Кабель ВВГнг 3×2.5', 'м', 75), ('Смеситель для кухни', 'шт', 2100),
+            ('Утеплитель минвата 50мм', 'уп', 620), ('Клей плиточный Ceresit', 'мешок', 410),
+        ]
+        for b in vse:
+            for _ in range(random.randint(1, 2)):
+                nm, ed, base = random.choice(materialy)
+                IzlishekMateriala.objects.create(
+                    brigada=b, nazvanie=nm, kolvo=Decimal(random.randint(3, 60)), edinica=ed,
+                    cena=Decimal(base + random.randint(-40, 40)), region=b.region,
+                    opisanie='Остались после объекта, самовывоз.', kontakt_telefon=b.telefon,
+                )
+
+        # Тендеры + отклики
+        zayavki = [
+            ('Ремонт 2-комнатной квартиры под ключ', 'Черновая + чистовая отделка, ~54 м². Материалы заказчика.', 480000),
+            ('Электромонтаж в новостройке', 'Разводка, щиток, ~60 точек. ЖК «Преображенский».', 180000),
+            ('Санузел под ключ', 'Плитка, сантехника, тёплый пол. 2 санузла.', 260000),
+            ('Штукатурка стен по маякам', 'Механизированная штукатурка, ~200 м².', 130000),
+        ]
+        for i, (nazv, opis, byudzhet) in enumerate(zayavki):
+            avtor = vse[i % len(vse)]
+            t = Tender.objects.create(brigada=avtor, nazvanie=nazv, opisanie=opis, region='Тюмень',
+                                      byudzhet=Decimal(byudzhet), srok_do=self.today + timedelta(days=random.randint(5, 20)))
+            for b in random.sample([x for x in vse if x != avtor], random.randint(2, 4)):
+                TenderOtklik.objects.create(
+                    tender=t, brigada=b, cena=Decimal(byudzhet + random.randint(-60, 30) * 1000),
+                    srok_dney=random.randint(14, 45), kommentariy='Готовы приступить, есть свободная бригада.',
+                )
+
+        self.stdout.write('Маркетплейс: бригад в каталоге %d, отзывов много, тендеров %d' % (len(vse), len(zayavki)))
 
     def _demo_foto(self, akty):
         if not akty:

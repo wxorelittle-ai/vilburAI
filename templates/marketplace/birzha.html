@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Биржа излишков материалов — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+            <h1 class="font-display text-3xl font-bold text-grafit">Биржа излишков</h1>
+            <p class="text-sm text-steel mt-1">Остались материалы после объекта? Продайте их другим бригадам.</p>
+        </div>
+        {% if user.is_authenticated %}
+        <a href="{% url 'marketplace:izlishek_create' %}" class="bg-terracotta hover:bg-accent-dark transition text-white font-bold px-5 py-3 rounded-xl min-h-[48px] flex items-center shadow-lift">+ Разместить</a>
+        {% else %}
+        <a href="{% url 'core:login' %}" class="text-sm text-terracotta font-semibold">Войдите, чтобы разместить →</a>
+        {% endif %}
+    </div>
+
+    <form method="get" class="flex flex-wrap gap-2 mb-6">
+        <input type="text" name="q" value="{{ q }}" placeholder="Материал"
+               class="flex-1 min-w-[160px] bg-white border border-sand-deep rounded-lg px-3 py-2 text-sm text-grafit">
+        <input type="text" name="region" value="{{ region }}" placeholder="Регион"
+               class="bg-white border border-sand-deep rounded-lg px-3 py-2 text-sm text-grafit">
+        <button type="submit" class="bg-grafit hover:bg-grafit-700 text-white font-semibold px-5 rounded-lg text-sm">Найти</button>
+    </form>
+
+    {% if izlishki %}
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for i in izlishki %}
+        <div class="bg-white border border-sand-deep rounded-2xl p-5 shadow-card flex flex-col">
+            <h3 class="font-display font-bold text-grafit">{{ i.nazvanie }}</h3>
+            <p class="text-sm text-steel mt-1">{{ i.kolvo }} {{ i.edinica }} · {{ i.region|default:"—" }}</p>
+            {% if i.opisanie %}<p class="text-sm text-steel mt-2 flex-1">{{ i.opisanie }}</p>{% else %}<div class="flex-1"></div>{% endif %}
+            <div class="flex items-center justify-between mt-4">
+                <span class="font-display text-lg font-extrabold text-grafit">{{ i.cena }} ₽<span class="text-sm font-normal text-steel">/{{ i.edinica }}</span></span>
+                <a href="tel:{{ i.kontakt_telefon }}" class="text-sm font-semibold text-terracotta hover:text-accent-dark">{{ i.kontakt_telefon }}</a>
+            </div>
+            <p class="text-xs text-steel/70 mt-2">{{ i.brigada.nazvanie }}{% if i.brigada_id == request.user.brigada.id %} · ваше{% endif %}</p>
+            {% if user.is_authenticated and i.brigada_id == request.user.brigada.id %}
+            <a href="{% url 'marketplace:izlishek_snyat' i.pk %}" class="text-xs text-steel hover:text-terracotta mt-1">Снять с публикации</a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="rounded-2xl bg-white border border-sand-deep p-10 text-center shadow-card text-steel">Активных объявлений нет.</div>
+    {% endif %}
+</div>
+{% endblock %}

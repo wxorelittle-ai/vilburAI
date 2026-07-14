@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Каталог бригад — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+            <h1 class="font-display text-3xl font-bold text-grafit">Каталог бригад</h1>
+            <p class="text-sm text-steel mt-1">Проверенные бригады с документами и отзывами.</p>
+        </div>
+        <div class="flex gap-2 text-sm">
+            <a href="{% url 'marketplace:birzha' %}" class="text-terracotta hover:text-accent-dark font-semibold">Биржа излишков</a>
+            <span class="text-steel">·</span>
+            <a href="{% url 'marketplace:tendery' %}" class="text-terracotta hover:text-accent-dark font-semibold">Тендеры</a>
+        </div>
+    </div>
+
+    <form method="get" class="flex flex-wrap gap-2 mb-6 bg-white border border-sand-deep rounded-2xl p-3 shadow-card">
+        <input type="text" name="q" value="{{ q }}" placeholder="Название бригады"
+               class="flex-1 min-w-[160px] bg-sand/40 border border-sand-deep rounded-lg px-3 py-2 text-sm text-grafit">
+        <select name="region" class="bg-sand/40 border border-sand-deep rounded-lg px-3 py-2 text-sm text-grafit">
+            <option value="">Все регионы</option>
+            {% for r in regiony %}<option value="{{ r }}" {% if r == region %}selected{% endif %}>{{ r }}</option>{% endfor %}
+        </select>
+        <label class="flex items-center gap-2 text-sm text-grafit px-2">
+            <input type="checkbox" name="verified" value="1" {% if tolko_podtv %}checked{% endif %}> только подтверждённые
+        </label>
+        <button type="submit" class="bg-grafit hover:bg-grafit-700 text-white font-semibold px-5 rounded-lg text-sm">Найти</button>
+    </form>
+
+    {% if kartochki %}
+    <div class="grid sm:grid-cols-2 gap-4">
+        {% for k in kartochki %}
+        <a href="{% url 'marketplace:master' k.brigada.pk %}" class="u-lift block bg-white border border-sand-deep rounded-2xl p-5 shadow-card hover:border-terracotta transition">
+            <div class="flex items-start justify-between gap-3 mb-2">
+                <h3 class="font-display font-bold text-grafit">{{ k.brigada.nazvanie }}</h3>
+                {% if k.podtverzhdena %}<span class="shrink-0 text-xs font-bold text-[#3B5A2E] bg-[#EAF1E6] rounded-full px-2.5 py-1">✓ Подтверждена</span>{% endif %}
+            </div>
+            <p class="text-sm text-steel mb-2">{{ k.brigada.region|default:"Регион не указан" }}</p>
+            <div class="flex items-center gap-2 text-sm">
+                {% if k.reyting.srednyaya %}
+                    <span class="text-amber">{% for i in "12345" %}{% if forloop.counter <= k.reyting.srednyaya %}★{% else %}<span class="text-sand-deep">★</span>{% endif %}{% endfor %}</span>
+                    <span class="text-grafit font-semibold">{{ k.reyting.srednyaya }}</span>
+                    <span class="text-steel">· {{ k.reyting.kolvo }} отз.</span>
+                {% else %}
+                    <span class="text-steel">Пока без отзывов</span>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="rounded-2xl bg-white border border-sand-deep p-10 text-center shadow-card text-steel">Бригады не найдены.</div>
+    {% endif %}
+</div>
+{% endblock %}

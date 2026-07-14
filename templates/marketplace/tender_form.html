@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Новая заявка — Бригадир.Про{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 sm:px-6 py-12">
+    <a href="{% url 'marketplace:tendery' %}" class="text-sm text-steel hover:text-terracotta">← Тендеры</a>
+    <h1 class="font-display text-2xl font-bold text-grafit mt-2 mb-1">Опубликовать заявку</h1>
+    <p class="text-sm text-steel mb-6">Опишите работы — бригады пришлют предложения с ценой и сроком.</p>
+
+    <form method="post" class="space-y-5 bg-white border border-sand-deep rounded-2xl shadow-card p-6 sm:p-8">
+        {% csrf_token %}
+        {% for field in form %}
+        <div>
+            <label class="block text-sm font-medium text-grafit mb-1.5">{{ field.label }}</label>
+            {{ field }}
+            {% for e in field.errors %}<p class="text-xs text-accent-dark mt-1">{{ e }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="w-full bg-terracotta hover:bg-accent-dark transition text-white font-bold text-lg py-4 rounded-xl">Опубликовать заявку</button>
+    </form>
+</div>
+
+<script>
+    document.querySelectorAll('form input, form select, form textarea').forEach(el => {
+        el.classList.add('w-full', 'bg-sand/40', 'border', 'border-sand-deep', 'rounded-lg', 'px-4', 'py-2.5', 'text-grafit', 'text-sm');
+    });
+</script>
+{% endblock %}

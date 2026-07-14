@@ -163,6 +163,7 @@
             </div>
             {% else %}
             <div class="flex items-center gap-2 sm:gap-3">
+                <a href="{% url 'marketplace:katalog' %}" class="hidden sm:inline text-sm text-white/80 hover:text-amber transition px-2">Найти бригаду</a>
                 <button type="button" data-install class="hidden text-sm px-3 py-2 rounded-lg bg-amber/20 text-amber hover:bg-amber/30 transition font-semibold">Установить</button>
                 <button type="button" data-theme-toggle class="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 transition text-base leading-none" aria-label="Тёмная тема">☾</button>
                 <a href="{% url 'core:login' %}" class="text-sm text-white/80 hover:text-amber transition px-2">Войти</a>

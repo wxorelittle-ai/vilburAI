@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'proverka.apps.ProverkaConfig',    # Модуль E — проверка заказчика
     'messengers.apps.MessengersConfig',  # Модуль F — WhatsApp / Telegram
     'golos.apps.GolosConfig',          # Модуль H — голосовой ввод
+    'marketplace.apps.MarketplaceConfig',  # Модуль 4 — маркетплейс (репутация, биржа, тендеры)
 ]
 
 MIDDLEWARE = [
