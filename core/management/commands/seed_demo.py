@@ -28,6 +28,14 @@ from billing.models import Platezh
 from objekty.models import (
     Objekt, EtapGrafika, Material, OplataMontajnika, RashodMesyachny, DvizhenieDeneg, AiZapros,
 )
+from podpis.models import PodpisZakazchika
+from nalogi.models import ChekFNS, NalogOtchet
+from nalogi import fns as fns_service
+from proverka.models import ProverkaZakazchika, ChyornySpisok
+from proverka import service as proverka_service
+from messengers.models import WhatsAppOtpravka, TelegramUser
+from messengers import wa as wa_service
+from golos.models import GolosovayaKomanda
 
 User = get_user_model()
 
@@ -79,6 +87,7 @@ class Command(BaseCommand):
         self._calculations(brigada)
         smety = self._estimates(brigada)
         self._objects(brigada, smety)
+        self._addendum(brigada)
         self.stdout.write(self.style.SUCCESS(
             '\nДемо-данные созданы для бригады «%s». Вход: demo / Demo12345' % brigada.nazvanie
         ))
@@ -106,12 +115,16 @@ class Command(BaseCommand):
         return brigada
 
     def _wipe(self, brigada):
-        Dokument.objects.filter(brigada=brigada).delete()
+        Dokument.objects.filter(brigada=brigada).delete()  # каскадом: чеки, подписи, WA, фото
         Raschet.objects.filter(brigada=brigada).delete()
         Smeta.objects.filter(brigada=brigada).delete()
         Objekt.objects.filter(brigada=brigada).delete()
         Platezh.objects.filter(brigada=brigada).delete()
         brigada.limit_trackers.all().delete()
+        ProverkaZakazchika.objects.filter(brigada=brigada).delete()
+        NalogOtchet.objects.filter(brigada=brigada).delete()
+        GolosovayaKomanda.objects.filter(brigada=brigada).delete()
+        ChyornySpisok.objects.all().delete()
 
     # --------------------------------------------------------------- платежи
     def _payments(self, brigada):
@@ -454,3 +467,112 @@ class Command(BaseCommand):
         for vopros in ['Что горит по объекту прямо сейчас?', 'Успеваем ли мы по графику и деньгам?'][:random.randint(1, 2)]:
             otvet, demo = ai_assistant.ask(ob, vopros)
             AiZapros.objects.create(objekt=ob, vopros=vopros, otvet=otvet, demo_rezhim=demo)
+
+    # ------------------------------------------------ модули D–I (Addendum №1)
+    def _addendum(self, brigada):
+        dokumenty = list(Dokument.objects.filter(brigada=brigada))
+        income = [d for d in dokumenty if d.tip in ('dogovor', 'raspiska', 'akt_vkr')]
+        akty = [d for d in dokumenty if d.tip == 'akt_priemki']
+
+        # Чёрный список (Модуль E) — вымышленные проблемные контрагенты
+        ChyornySpisok.objects.create(telefon=ZAKAZCHIKI[10][1], prichina='Не оплатил финальный этап, 90 000 ₽', istochnik='narod', kolvo_zhalob=4)
+        ChyornySpisok.objects.create(inn='7203555001', prichina='3 арбитражных дела по неоплате подряда', istochnik='arbitr', kolvo_zhalob=3)
+        ChyornySpisok.objects.create(telefon='+79111234500', prichina='Отказ от приёмки без оснований', istochnik='narod', kolvo_zhalob=2)
+
+        # Чеки ФНС (Модуль D) — пробиваем по документам-основаниям + сводка
+        n_chek = 0
+        for d in income[:6]:
+            chek = ChekFNS(brigada=brigada, dokument=d, summa=(d.avans_summa or d.summa or Decimal('50000')),
+                           naznachenie=f'Оплата по документу №{d.nomer}', telefon_zakazchika=d.zakazchik_telefon)
+            fns_service.probit_chek(chek)
+            n_chek += 1
+        for i in range(2):
+            chek = ChekFNS(brigada=brigada, summa=Decimal(random.randint(20, 80) * 1000),
+                           naznachenie='Оплата за работы наличными', telefon_zakazchika=random.choice(ZAKAZCHIKI)[1])
+            fns_service.probit_chek(chek)
+            n_chek += 1
+
+        # Проверки заказчиков (Модуль E) — разный риск, включая чёрный список
+        proverki_vhod = [
+            ('telefon', ZAKAZCHIKI[10][1]), ('inn', '7203555001'),   # высокий (чёрный список)
+            ('inn', '7203123456'), ('inn', '7204998877'),
+            ('telefon', ZAKAZCHIKI[1][1]), ('telefon', ZAKAZCHIKI[3][1]),
+        ]
+        for tip, znach in proverki_vhod:
+            risk, prichina, detali, demo = proverka_service.proverit(tip, znach)
+            ProverkaZakazchika.objects.create(brigada=brigada, tip_poiska=tip, znachenie=znach,
+                                              status_riska=risk, prichina=prichina, detali=detali, demo_rezhim=demo)
+
+        # Подписи ПЭП (Модуль I) — часть подписана, часть ожидает
+        for i, d in enumerate(income[:5]):
+            p = PodpisZakazchika.objects.create(dokument=d)
+            if i < 3:
+                p.podpisat(telefon=d.zakazchik_telefon or '+79990000000', ip=f'85.140.{random.randint(1,254)}.{random.randint(1,254)}')
+
+        # WhatsApp-отправки (Модуль F)
+        for d in income[:5]:
+            wa_service.otpravit(d, d.zakazchik_telefon or '+79990001111', WhatsAppOtpravka.TIP_DOKUMENT,
+                                f'{brigada.nazvanie}: направляем документ №{d.nomer}')
+        if income:
+            wa_service.otpravit(income[0], income[0].zakazchik_telefon or '+79990001111',
+                                WhatsAppOtpravka.TIP_PODPIS, 'Ссылка на подписание')
+
+        # Telegram — привязан (демо)
+        tg = TelegramUser.dlya_brigady(brigada)
+        tg.telegram_id = 100200300
+        tg.username = 'sibstroy72'
+        tg.status = TelegramUser.STATUS_SVYAZAN
+        tg.save()
+
+        # Голосовые команды (Модуль H)
+        golos_texty = [
+            'укладка плитки 40 квадратов, штукатурка стен 120 метров',
+            'демонтаж перегородок 24 квадрата, вывоз мусора 3 штуки',
+            'монтаж проводки 45 точек, установка дверей 5 штук',
+            'грунтовка стен 200 квадратов',
+        ]
+        try:
+            from golos.parse import parse_pozicii
+            for t in golos_texty:
+                poz = parse_pozicii(t, 'srednyaya')
+                GolosovayaKomanda.objects.create(brigada=brigada, tekst_raspoznanny=t, pozicii_najdeno=len(poz))
+        except Exception as exc:  # noqa: BLE001
+            self.stderr.write('  Голосовые демо-команды не созданы: %s' % exc)
+
+        # Фото-акты (Модуль G) — реальные изображения с водяным знаком
+        n_foto = self._demo_foto(akty)
+
+        self.stdout.write('Addendum: чеков %d, проверок %d, подписей %d, WA %d, Telegram привязан, голос %d, фото %d'
+                          % (n_chek, len(proverki_vhod), 5, 6, len(golos_texty), n_foto))
+
+    def _demo_foto(self, akty):
+        if not akty:
+            return 0
+        try:
+            from io import BytesIO
+            from PIL import Image
+            from fotoakty.images import process_photo
+            from fotoakty.models import FotoAkt
+            from fotoakty.views import _regenerate_akt_pdf
+        except Exception:  # noqa: BLE001
+            return 0
+        akt = akty[0]
+        podpisi_foto = ['Стена до штукатурки', 'Стена после штукатурки', 'Электрощиток собран']
+        cvet = [(150, 120, 90), (180, 170, 160), (90, 100, 120)]
+        watermark = [akt.brigada.nazvanie, akt.adres_obekta, 'Дата: демо']
+        n = 0
+        for i, podpis in enumerate(podpisi_foto):
+            buf = BytesIO()
+            Image.new('RGB', (1400, 1050), cvet[i % len(cvet)]).save(buf, 'JPEG')
+            buf.seek(0)
+            try:
+                content, lat, lon = process_photo(buf, watermark)
+            except Exception:  # noqa: BLE001
+                continue
+            f = FotoAkt(dokument=akt, watermark_text=' · '.join(watermark), podpis_snizu=podpis,
+                        geo_lat=57.15 + i * 0.001, geo_lon=65.53 + i * 0.001)
+            f.foto_file.save(f'demo_{i+1}.jpg', content, save=True)
+            n += 1
+        if n:
+            _regenerate_akt_pdf(akt)
+        return n
