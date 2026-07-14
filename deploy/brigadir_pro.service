@@ -1,5 +1,5 @@
 [Unit]
-Description=Бригадир.Про — Gunicorn
+Description=Вильбур AI — Gunicorn
 After=network.target postgresql.service
 Wants=postgresql.service
 
