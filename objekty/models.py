@@ -17,6 +17,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import models
 from django.utils import timezone
+from django.utils.functional import cached_property
 
 
 def money(value) -> Decimal:
@@ -65,15 +66,15 @@ class Objekt(models.Model):
 
     # --- Готовность и график ---------------------------------------------------
 
-    @property
+    @cached_property
     def plan_objem_itogo(self) -> Decimal:
         return money(sum((e.plan_objem for e in self.etapy.all()), Decimal('0')))
 
-    @property
+    @cached_property
     def fact_objem_itogo(self) -> Decimal:
         return money(sum((e.fact_objem for e in self.etapy.all()), Decimal('0')))
 
-    @property
+    @cached_property
     def procent_gotovnosti(self) -> int:
         """% готовности как средневзвешенный по плановым объёмам этапов."""
         plan = self.plan_objem_itogo
@@ -81,7 +82,7 @@ class Objekt(models.Model):
             return 0
         return int((self.fact_objem_itogo / plan * 100).to_integral_value(rounding=ROUND_HALF_UP))
 
-    @property
+    @cached_property
     def otstaet_ot_grafika(self) -> bool:
         return any(e.status_temp == 'otstavanie' for e in self.etapy.all())
 
@@ -101,44 +102,44 @@ class Objekt(models.Model):
                 result.append(m)
         return result
 
-    @property
+    @cached_property
     def est_prosrochennye_materialy(self) -> bool:
         return any(m.prosrocheno for m in self.materialy.all())
 
     # --- Деньги и кассовый разрыв ----------------------------------------------
 
-    @property
+    @cached_property
     def prihod_poluchen(self) -> Decimal:
         return money(sum((d.summa_nachislenie for d in self.dvizhenie_deneg.all() if d.status == DvizhenieDeneg.STATUS_POLUCHENO), Decimal('0')))
 
-    @property
+    @cached_property
     def prihod_ozhidaetsya(self) -> Decimal:
         return money(sum((d.summa_nachislenie for d in self.dvizhenie_deneg.all() if d.status != DvizhenieDeneg.STATUS_POLUCHENO), Decimal('0')))
 
-    @property
+    @cached_property
     def rashod_itogo(self) -> Decimal:
         rashody = sum((r.itogo for r in self.rashody.all()), Decimal('0'))
         oplaty = sum((o.summa_oplacheno for o in self.oplaty_montajnikov.all()), Decimal('0'))
         return money(rashody + oplaty)
 
-    @property
+    @cached_property
     def kassovy_razryv(self) -> Decimal:
         """Получено от заказчика минус потрачено. Отрицательное — кассовый разрыв."""
         return money(self.prihod_poluchen - self.rashod_itogo)
 
-    @property
+    @cached_property
     def est_kassovy_razryv(self) -> bool:
         return self.kassovy_razryv < 0
 
     # --- Переплата монтажникам -------------------------------------------------
 
-    @property
+    @cached_property
     def est_risk_pereplaty(self) -> bool:
         return any(o.prevyshenie_grafika and not o.oplacheno_sverh_grafika for o in self.oplaty_montajnikov.all())
 
     # --- Флаги для блока «⚠ Требует внимания» -----------------------------------
 
-    @property
+    @cached_property
     def krasnye_flagi(self):
         """Красные флаги (раздел 7.6 ТЗ): просрочка материала и кассовый разрыв.
         Отставание от графика — это ЖЁЛТЫЙ уровень (см. otstaet_ot_grafika), сюда не входит."""
@@ -156,7 +157,7 @@ class Objekt(models.Model):
             flagi.append('Риск переплаты монтажнику сверх планового объёма')
         return flagi
 
-    @property
+    @cached_property
     def zhyoltye_flagi(self):
         """Жёлтый уровень (раздел 7.6 ТЗ): отставание от графика."""
         flagi = []
@@ -188,18 +189,18 @@ class EtapGrafika(models.Model):
     def __str__(self):
         return self.nazvanie
 
-    @property
+    @cached_property
     def procent(self) -> int:
         if not self.plan_objem:
             return 0
         return int((self.fact_objem / self.plan_objem * 100).to_integral_value(rounding=ROUND_HALF_UP))
 
-    @property
+    @cached_property
     def perezakryt(self) -> bool:
         """Факт превышает план — предупреждение о перезакрытии."""
         return self.fact_objem > self.plan_objem
 
-    @property
+    @cached_property
     def status_temp(self) -> str:
         """'opustil' по темпу: opережение / v_grafike / otstavanie / gotov."""
         if self.plan_objem and self.fact_objem >= self.plan_objem:
@@ -216,7 +217,7 @@ class EtapGrafika(models.Model):
             return 'operezhenie'
         return 'v_grafike'
 
-    @property
+    @cached_property
     def status_temp_label(self) -> str:
         return {
             'gotov': 'Выполнен',
@@ -257,7 +258,7 @@ class Material(models.Model):
     def __str__(self):
         return self.nazvanie
 
-    @property
+    @cached_property
     def data_zakaza_kraynyaya(self):
         """Крайняя дата заказа = дата НАЧАЛА этапа − производство − доставка − буфер.
         Требование ТЗ (Addendum №2, раздел 16): всегда от даты начала, не окончания."""
@@ -267,14 +268,14 @@ class Material(models.Model):
             days=self.srok_proizvodstva_dney + self.srok_dostavki_dney + self.bufer_dney
         )
 
-    @property
+    @cached_property
     def prosrocheno(self) -> bool:
         if self.status in (self.STATUS_ZAKAZAN, self.STATUS_V_PUTI, self.STATUS_NA_OBEKTE):
             return False
         kraynyaya = self.data_zakaza_kraynyaya
         return bool(kraynyaya and timezone.localdate() > kraynyaya)
 
-    @property
+    @cached_property
     def dney_do_krayney_daty(self):
         """Сколько дней осталось до крайней даты заказа (отрицательное — просрочено)."""
         kraynyaya = self.data_zakaza_kraynyaya
@@ -282,7 +283,7 @@ class Material(models.Model):
             return None
         return (kraynyaya - timezone.localdate()).days
 
-    @property
+    @cached_property
     def data_postavki_ozhidaemaya(self):
         """Ожидаемая дата поставки на объект = дата заказа + производство + доставка.
         Считается для уже заказанных материалов (заказан / в пути)."""
@@ -290,13 +291,13 @@ class Material(models.Model):
             return self.data_zakaza_fakt + timedelta(days=self.srok_proizvodstva_dney + self.srok_dostavki_dney)
         return None
 
-    @property
+    @cached_property
     def postavka_zaderzhana(self) -> bool:
         """Заказанный материал, ожидаемая поставка которого уже просрочена, но он ещё не на объекте."""
         d = self.data_postavki_ozhidaemaya
         return bool(d and timezone.localdate() > d)
 
-    @property
+    @cached_property
     def srochno_zakazat(self) -> bool:
         """Ещё не заказан, крайняя дата — в ближайшие 7 дней (но ещё не просрочена)."""
         if self.status != self.STATUS_NE_ZAKAZAN or self.prosrocheno:
@@ -304,7 +305,7 @@ class Material(models.Model):
         dney = self.dney_do_krayney_daty
         return dney is not None and 0 <= dney <= 7
 
-    @property
+    @cached_property
     def status_display_effective(self) -> str:
         if self.prosrocheno:
             return 'Просрочен заказ'
@@ -312,7 +313,7 @@ class Material(models.Model):
             return 'Поставка задержана'
         return self.get_status_display()
 
-    @property
+    @cached_property
     def postavka_kategoriya(self):
         """Категория для экрана поставок: prosrochen_zakaz / zaderzhka_postavki /
         zakazat_srochno / ozhidaetsya / ne_zakazan / na_obekte."""
@@ -349,22 +350,22 @@ class OplataMontajnika(models.Model):
     def __str__(self):
         return f'{self.montajnik_fio} — {self.mesyats:%m.%Y}'
 
-    @property
+    @cached_property
     def prevyshenie_grafika(self) -> bool:
         return self.fact_objem_mesyats > self.plan_objem_mesyats
 
-    @property
+    @cached_property
     def objem_k_oplate(self) -> Decimal:
         """Объём к оплате: факт, но не выше планового — если не подтверждена оплата сверх графика."""
         if self.oplacheno_sverh_grafika:
             return self.fact_objem_mesyats
         return min(self.fact_objem_mesyats, self.plan_objem_mesyats)
 
-    @property
+    @cached_property
     def summa_k_oplate(self) -> Decimal:
         return money(self.objem_k_oplate * self.rascenka)
 
-    @property
+    @cached_property
     def ostatok_k_vyplate(self) -> Decimal:
         return money(self.summa_k_oplate - self.summa_oplacheno)
 
@@ -388,7 +389,7 @@ class RashodMesyachny(models.Model):
     def __str__(self):
         return f'Расходы {self.mesyats:%m.%Y}'
 
-    @property
+    @cached_property
     def itogo(self) -> Decimal:
         return money(self.sutochnye + self.arenda_kvartiry + self.oplata_mastera + self.dolya_ofisa + self.prochee)
 
@@ -421,7 +422,7 @@ class DvizhenieDeneg(models.Model):
     def __str__(self):
         return f'{self.osnovanie} — {self.summa_nachislenie} ₽'
 
-    @property
+    @cached_property
     def summa_za_vychetom_garantii(self) -> Decimal:
         procent = self.objekt.garantiynoe_uderzhanie_procent
         return money(self.summa_nachislenie * (100 - procent) / 100)

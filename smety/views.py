@@ -14,7 +14,7 @@ from .pdf import render_smeta_pdf
 @login_required
 def smeta_list(request):
     """История смет (раздел 4.4 / 7.2 ТЗ)."""
-    smety = Smeta.objects.filter(brigada=request.user.brigada)
+    smety = Smeta.objects.filter(brigada=request.user.brigada).prefetch_related('raboty')
     return render(request, 'smety/list.html', {'smety': smety})
 
 

@@ -2,6 +2,7 @@ import secrets
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import models
+from django.utils.functional import cached_property
 
 
 def money(value) -> Decimal:
@@ -107,7 +108,7 @@ class Smeta(models.Model):
             self.public_slug = secrets.token_urlsafe(6).replace('_', '').replace('-', '')[:10]
             self.save(update_fields=['public_slug'])
 
-    @property
+    @cached_property
     def itogo(self) -> Decimal:
         return money(sum((r.summa for r in self.raboty.all()), Decimal('0.00')))
 

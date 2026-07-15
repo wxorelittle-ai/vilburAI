@@ -5,6 +5,7 @@ from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Prefetch
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
@@ -33,7 +34,14 @@ def obekty_list(request):
     guard = _guard_module(request)
     if guard:
         return guard
-    obekty = list(Objekt.objects.filter(brigada=request.user.brigada))
+    # prefetch всех реляций, которые читают свойства-агрегаты (светофор, готовность,
+    # кассовый разрыв) — иначе N+1: ~400 запросов на 10 объектов вместо ~6.
+    obekty = list(
+        Objekt.objects.filter(brigada=request.user.brigada).prefetch_related(
+            'etapy', 'dvizhenie_deneg', 'rashody', 'oplaty_montajnikov',
+            Prefetch('materialy', queryset=Material.objects.select_related('etap')),
+        )
+    )
     trebuyut_vnimaniya = [o for o in obekty if o.krasnye_flagi]
     return render(request, 'objekty/list.html', {
         'obekty': obekty,
