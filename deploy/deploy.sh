@@ -16,6 +16,10 @@ git pull
 echo "=== Установка зависимостей ==="
 "$APP_DIR/venv/bin/pip" install -r requirements.txt
 
+# DATABASE_URL из .env в окружение явно — иначе manage.py может уйти в SQLite-фолбэк
+set -a; . "$APP_DIR/.env"; set +a
+export PGSSLMODE=disable
+
 echo "=== Миграции ==="
 "$APP_DIR/venv/bin/python" manage.py migrate --noinput
 

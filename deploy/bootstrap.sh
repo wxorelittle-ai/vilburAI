@@ -81,8 +81,13 @@ mkdir -p /var/log/brigadir_pro /run/brigadir_pro
 chown -R "$APP_USER":www-data "$APP_DIR" /var/log/brigadir_pro
 
 echo "==> [7/10] Миграции и статика"
-sudo -u "$APP_USER" "$APP_DIR/venv/bin/python" "$APP_DIR/manage.py" migrate --noinput
-sudo -u "$APP_USER" "$APP_DIR/venv/bin/python" "$APP_DIR/manage.py" collectstatic --noinput
+# ВАЖНО: manage.py под sudo -u не всегда подхватывает .env через decouple и может
+# свалиться в SQLite-фолбэк. Передаём DATABASE_URL из .env в окружение явно, чтобы
+# миграции гарантированно шли в PostgreSQL (а не в локальный db.sqlite3).
+set -a; . "$APP_DIR/.env"; set +a
+rm -f "$APP_DIR/db.sqlite3"
+sudo -u "$APP_USER" env DATABASE_URL="$DATABASE_URL" PGSSLMODE=disable "$APP_DIR/venv/bin/python" "$APP_DIR/manage.py" migrate --noinput
+sudo -u "$APP_USER" env DATABASE_URL="$DATABASE_URL" PGSSLMODE=disable "$APP_DIR/venv/bin/python" "$APP_DIR/manage.py" collectstatic --noinput
 
 echo "==> [8/10] Gunicorn (systemd)"
 cp "$APP_DIR/deploy/brigadir_pro.service" /etc/systemd/system/brigadir_pro.service
