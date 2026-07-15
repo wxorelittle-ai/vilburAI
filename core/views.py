@@ -10,13 +10,11 @@ from .forms import RegistrationForm, BrigadaProfileForm
 
 def landing(request):
     """
-    Лендинг (раздел 7.2 ТЗ): 3 экрана — боль пропадающих авансов → решение → тарифы.
-    Если пользователь уже вошёл — сразу в личный кабинет.
+    Корень сайта. Лендинг убран — сразу ведём в систему (личный кабинет).
+    При AUTO_LOGIN анонимный пользователь уже авторизован middleware'ом,
+    иначе dashboard сам отправит на страницу входа.
     """
-    if request.user.is_authenticated:
-        return redirect('core:dashboard')
-    tarify = _tarify_dlya_shablona()
-    return render(request, 'core/landing.html', {'tarify': tarify})
+    return redirect('core:dashboard')
 
 
 @ratelimit(key='ip', rate='10/m', method='POST', block=True)

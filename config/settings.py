@@ -50,9 +50,16 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.auto_login_middleware',  # авто-вход владельца (см. AUTO_LOGIN)
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# --- Авто-вход владельца (однопользовательский режим) --------------------------
+# True (по умолчанию): сайт открывается сразу в кабинете, без лендинга и логина.
+# False: обычная авторизация и регистрация (многопользовательский режим).
+AUTO_LOGIN = config('AUTO_LOGIN', default=True, cast=bool)
+AUTO_LOGIN_USERNAME = config('AUTO_LOGIN_USERNAME', default='vladelec')
 
 ROOT_URLCONF = 'config.urls'
 
