@@ -76,10 +76,18 @@ MONTAJNIKI = ['Гафуров Р.', 'Смирнов К.', 'Ли Вэй', 'Ога
 
 
 class Command(BaseCommand):
-    help = 'Наполняет демо-фирму «СибСтрой 72» реалистичными данными (Тюмень).'
+    help = 'Наполняет демо-фирму реалистичными данными (Тюмень). По умолчанию — «СибСтрой 72» (demo).'
+
+    def add_arguments(self, parser):
+        parser.add_argument('--user', default='demo', help='username аккаунта, который наполняем')
+        parser.add_argument('--firm', default='СибСтрой 72', help='название фирмы (Brigada.nazvanie)')
+        parser.add_argument('--password', default='', help='если задан — установить пароль пользователю')
 
     def handle(self, *args, **options):
         random.seed(72)
+        self.username = options['user']
+        self.firm_name = options['firm']
+        self.password = options['password']
         self.today = timezone.localdate()
         brigada = self._firm()
         self._wipe(brigada)
@@ -91,29 +99,42 @@ class Command(BaseCommand):
         self._addendum(brigada)
         self._marketplace(brigada)
         self.stdout.write(self.style.SUCCESS(
-            '\nДемо-данные созданы для бригады «%s». Вход: demo / Demo12345' % brigada.nazvanie
+            '\nДемо-данные созданы для бригады «%s» (пользователь %s).' % (brigada.nazvanie, self.username)
         ))
 
     # ------------------------------------------------------------------ фирма
     def _firm(self):
-        user, created = User.objects.get_or_create(username='demo', defaults={'first_name': 'Демо'})
-        user.set_password('Demo12345')
-        user.save()
-        brigada, _ = Brigada.objects.get_or_create(user=user, defaults={'nazvanie': 'СибСтрой 72'})
-        brigada.nazvanie = 'Бригада «СибСтрой 72»'
-        brigada.telefon = '+79088417272'
+        user, created = User.objects.get_or_create(username=self.username, defaults={'first_name': 'Демо'})
+        if self.password:
+            user.set_password(self.password)
+            user.save()
+        brigada, _ = Brigada.objects.get_or_create(user=user, defaults={'nazvanie': self.firm_name})
+        is_wilbur = 'вильбур' in self.firm_name.lower()
+        brigada.nazvanie = ('Строительная компания «Вильбур»' if is_wilbur
+                            else 'Бригада «%s»' % self.firm_name)
+        brigada.telefon = '+79088417272' if is_wilbur else '+79088417272'
         brigada.region = 'Тюмень'
-        brigada.rekvizity = (
-            'ИП Ковалёв Артём Сергеевич\n'
-            'ИНН 720312345678 · ОГРНИП 320723200012345\n'
-            'р/с 40802810067100012345 в Тюменском отделении №29 ПАО Сбербанк\n'
-            'к/с 30101810800000000651 · БИК 047102651\n'
-            'г. Тюмень, ул. 30 лет Победы, 88'
-        )
+        if is_wilbur:
+            brigada.rekvizity = (
+                'ООО «Вильбур»\n'
+                'ИНН 7203512345 · ОГРН 1237200098765 · КПП 720301001\n'
+                'р/с 40702810900000054321 в Филиале «Екатеринбургский» АО «Альфа-Банк»\n'
+                'к/с 30101810100000000964 · БИК 046577964\n'
+                'г. Тюмень, ул. Максима Горького, 68, офис 401\n'
+                'тел. +7 (3452) 55-72-72 · info@vilbur.online'
+            )
+        else:
+            brigada.rekvizity = (
+                'ИП Ковалёв Артём Сергеевич\n'
+                'ИНН 720312345678 · ОГРНИП 320723200012345\n'
+                'р/с 40802810067100012345 в Тюменском отделении №29 ПАО Сбербанк\n'
+                'к/с 30101810800000000651 · БИК 047102651\n'
+                'г. Тюмень, ул. 30 лет Победы, 88'
+            )
         brigada.tarif = 'pro'
         brigada.data_okonchaniya_tarifa = self.today + timedelta(days=180)
         brigada.save()
-        self.stdout.write('Фирма: %s (тариф PRO)' % brigada.nazvanie)
+        self.stdout.write('Фирма: %s (тариф PRO, пользователь %s)' % (brigada.nazvanie, self.username))
         return brigada
 
     def _wipe(self, brigada):
@@ -123,9 +144,11 @@ class Command(BaseCommand):
         Objekt.objects.filter(brigada=brigada).delete()
         Platezh.objects.filter(brigada=brigada).delete()
         brigada.limit_trackers.all().delete()
+        ChekFNS.objects.filter(brigada=brigada).delete()
         ProverkaZakazchika.objects.filter(brigada=brigada).delete()
         NalogOtchet.objects.filter(brigada=brigada).delete()
         GolosovayaKomanda.objects.filter(brigada=brigada).delete()
+        TelegramUser.objects.filter(brigada=brigada).delete()
         ChyornySpisok.objects.all().delete()
         Otzyv.objects.filter(brigada=brigada).delete()
         IzlishekMateriala.objects.filter(brigada=brigada).delete()
@@ -523,10 +546,10 @@ class Command(BaseCommand):
             wa_service.otpravit(income[0], income[0].zakazchik_telefon or '+79990001111',
                                 WhatsAppOtpravka.TIP_PODPIS, 'Ссылка на подписание')
 
-        # Telegram — привязан (демо)
+        # Telegram — привязан (демо). telegram_id уникален глобально — привязываем к pk бригады.
         tg = TelegramUser.dlya_brigady(brigada)
-        tg.telegram_id = 100200300
-        tg.username = 'sibstroy72'
+        tg.telegram_id = 100200300 + brigada.pk
+        tg.username = self.username
         tg.status = TelegramUser.STATUS_SVYAZAN
         tg.save()
 
