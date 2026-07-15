@@ -9,6 +9,10 @@ User=brigadir
 Group=www-data
 WorkingDirectory=/opt/brigadir_pro
 EnvironmentFile=/opt/brigadir_pro/.env
+# HOME на каталог приложения (домашний /home недоступен из-за ProtectHome),
+# PGSSLMODE=disable — localhost-подключение к PostgreSQL без поиска клиентских сертов
+Environment=HOME=/opt/brigadir_pro
+Environment=PGSSLMODE=disable
 RuntimeDirectory=brigadir_pro
 ExecStart=/opt/brigadir_pro/venv/bin/gunicorn -c /opt/brigadir_pro/deploy/gunicorn.conf.py config.wsgi:application
 ExecReload=/bin/kill -s HUP $MAINPID

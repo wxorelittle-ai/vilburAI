@@ -40,15 +40,15 @@ id -u "$APP_USER" >/dev/null 2>&1 || useradd --system --create-home --shell /usr
 
 echo "==> [3/10] PostgreSQL: база и пользователь (+ права схемы public для PG15+)"
 systemctl enable --now postgresql
-DB_PASSWORD=$(openssl rand -hex 20)
 sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}'" | grep -q 1 \
     || sudo -u postgres psql -c "CREATE DATABASE ${DB_NAME};"
 sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='${DB_USER}'" | grep -q 1 \
-    || sudo -u postgres psql -c "CREATE USER ${DB_USER} WITH PASSWORD '${DB_PASSWORD}';"
-sudo -u postgres psql -c "ALTER USER ${DB_USER} WITH PASSWORD '${DB_PASSWORD}';"
+    || sudo -u postgres psql -c "CREATE USER ${DB_USER};"
 sudo -u postgres psql -c "ALTER ROLE ${DB_USER} SET client_encoding TO 'utf8';"
 sudo -u postgres psql -c "ALTER DATABASE ${DB_NAME} OWNER TO ${DB_USER};"
 sudo -u postgres psql -d "${DB_NAME}" -c "GRANT ALL ON SCHEMA public TO ${DB_USER};"
+# Пароль БД задаётся ТОЛЬКО при первом деплое (когда пишется .env) — см. шаг [5].
+# Иначе повторный запуск сбрасывал бы пароль в БД, а .env оставался старым.
 
 echo "==> [4/10] Виртуальное окружение и зависимости"
 [ -d "$APP_DIR/venv" ] || "$PYBIN" -m venv "$APP_DIR/venv"
@@ -57,6 +57,9 @@ echo "==> [4/10] Виртуальное окружение и зависимос
 
 echo "==> [5/10] .env"
 if [ ! -f "$APP_DIR/.env" ]; then
+    # первый запуск: задаём пароль БД и пишем совпадающий .env
+    DB_PASSWORD=$(openssl rand -hex 20)
+    sudo -u postgres psql -c "ALTER USER ${DB_USER} WITH PASSWORD '${DB_PASSWORD}';"
     SECRET=$("$APP_DIR/venv/bin/python" -c "import secrets;print(secrets.token_urlsafe(50))")
     cat > "$APP_DIR/.env" <<EOF
 SECRET_KEY=${SECRET}
@@ -68,9 +71,9 @@ YOOKASSA_SHOP_ID=
 YOOKASSA_SECRET_KEY=
 YOOKASSA_TEST_MODE=True
 EOF
-    echo "    .env создан (SECRET_KEY сгенерирован, БД подключена)"
+    echo "    .env создан (SECRET_KEY и пароль БД сгенерированы и синхронизированы)"
 else
-    echo "    .env уже существует — оставляю как есть"
+    echo "    .env уже существует — пароль БД и настройки не трогаю"
 fi
 
 echo "==> [6/10] Логи и права"

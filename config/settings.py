@@ -18,6 +18,10 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
 
+# За Nginx (SSL терминируется на прокси): доверяем X-Forwarded-Proto, иначе при
+# SECURE_SSL_REDIRECT=True получаем бесконечный редирект HTTP↔HTTPS.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # --- Приложения ---------------------------------------------------------------
 
 INSTALLED_APPS = [
