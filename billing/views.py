@@ -1,11 +1,12 @@
 import json
+import logging
 from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
@@ -13,6 +14,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 from . import yookassa_client
 from .models import Platezh
+
+logger = logging.getLogger(__name__)
 
 PLATNYE_TARIFY = ['samozanyaty', 'brigadir', 'pro']
 
@@ -102,20 +105,35 @@ def success(request):
 def webhook(request):
     """
     Приём уведомлений от ЮKassa (раздел 6.1 ТЗ): после успешной оплаты открывает
-    доступ и обновляет тариф. Проверка подлинности события — см. yookassa_client.verify_webhook_event.
+    доступ и обновляет тариф.
+
+    Телу уведомления не доверяем — ЮKassa его не подписывает. Порядок проверки:
+    1) вебхук возможен только с настроенными ключами (в демо-режиме их не бывает);
+    2) отправитель — из официальных сетей ЮKassa;
+    3) главное: платёж подтверждается встречным запросом к API (статус + сумма).
+    Без п.3 любой, кто знает id своего платежа, активировал бы тариф бесплатно.
     """
     if request.method != 'POST':
         return HttpResponseBadRequest('Только POST')
+
+    if not yookassa_client.is_configured():
+        # Ключей нет → настоящих уведомлений быть не может, значит это подделка.
+        return HttpResponseForbidden('Приём уведомлений отключён (демо-режим)')
+
+    ip = yookassa_client.klientskiy_ip(request)
+    if not yookassa_client.ip_iz_seti_yookassa(ip):
+        logger.warning('Вебхук ЮKassa с недоверенного IP: %s', ip)
+        return HttpResponseForbidden('IP не из сети ЮKassa')
 
     try:
         payload = json.loads(request.body)
     except (json.JSONDecodeError, UnicodeDecodeError):
         return HttpResponseBadRequest('Некорректный JSON')
 
-    if not yookassa_client.verify_webhook_event(payload):
-        return HttpResponseBadRequest('Событие не подтверждено')
+    if payload.get('event') != 'payment.succeeded':
+        return HttpResponse('OK')  # прочие события игнорируем, но retry не провоцируем
 
-    yookassa_id = payload.get('object', {}).get('id')
+    yookassa_id = (payload.get('object') or {}).get('id')
     if not yookassa_id:
         return HttpResponseBadRequest('Нет id платежа')
 
@@ -123,6 +141,10 @@ def webhook(request):
         platezh = Platezh.objects.get(yookassa_id=yookassa_id)
     except Platezh.DoesNotExist:
         return HttpResponseBadRequest('Платёж не найден')
+
+    if not yookassa_client.platezh_deystvitelno_oplachen(platezh):
+        logger.warning('Вебхук ЮKassa не подтверждён API для платежа %s', yookassa_id)
+        return HttpResponseForbidden('Платёж не подтверждён ЮKassa')
 
     if platezh.status != Platezh.STATUS_OPLACHEN:
         _activate_tarif(platezh)
