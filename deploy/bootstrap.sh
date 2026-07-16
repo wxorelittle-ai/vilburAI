@@ -128,6 +128,24 @@ else
     echo "    бэкап добавлен в cron (ежедневно в 03:00)"
 fi
 
+# Сторож живости: пингует /healthz и перезапускает сервис при повторных сбоях
+WD_LINE="*/5 * * * * bash ${APP_DIR}/deploy/watchdog.sh >> /var/log/brigadir_pro/watchdog.log 2>&1"
+if crontab -l 2>/dev/null | grep -q "deploy/watchdog.sh"; then
+    echo "    сторож уже в cron"
+else
+    ( crontab -l 2>/dev/null; echo "HEALTH_URL=https://${DOMAIN}/healthz"; echo "$WD_LINE" ) | crontab -
+    echo "    сторож добавлен в cron (каждые 5 минут)"
+fi
+
+# Чистка протухших сессий — иначе таблица растёт от ботов и краулеров
+CS_LINE="30 4 * * * cd ${APP_DIR} && set -a && . ./.env && set +a && sudo -u ${APP_USER} env DATABASE_URL=\"\$DATABASE_URL\" PGSSLMODE=disable ${APP_DIR}/venv/bin/python manage.py clearsessions >> /var/log/brigadir_pro/cron.log 2>&1"
+if crontab -l 2>/dev/null | grep -q "clearsessions"; then
+    echo "    чистка сессий уже в cron"
+else
+    ( crontab -l 2>/dev/null; echo "$CS_LINE" ) | crontab -
+    echo "    чистка сессий добавлена в cron (ежедневно в 04:30)"
+fi
+
 echo "==> [11/11] SSL (Let's Encrypt)"
 if certbot --nginx -d "${DOMAIN}" -d "www.${DOMAIN}" --non-interactive --agree-tos -m "${EMAIL}" --redirect; then
     echo "    SSL выпущен, HTTP -> HTTPS настроен."

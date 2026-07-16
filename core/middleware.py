@@ -13,7 +13,7 @@
 from datetime import timedelta
 
 from django.conf import settings
-from django.contrib.auth import login, get_user_model
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 # Страницы, которые владелец ОТПРАВЛЯЕТ третьим лицам, обязаны остаться анонимными:
@@ -21,8 +21,9 @@ from django.utils import timezone
 # документами, объектами и финансами (раздел 8 ТЗ — публичная смета только на чтение).
 #   /s/    — публичная смета для заказчика
 #   /sign/ — страница подписания документа (ПЭП)
+#   /healthz — проверка живости для мониторинга (иначе каждый пинг плодил бы сессию)
 _EXEMPT_PREFIXES = ('/admin', '/static', '/media', '/sw.js', '/manifest', '/offline',
-                    '/sign/', '/s/')
+                    '/sign/', '/s/', '/healthz')
 
 
 def auto_login_middleware(get_response):
@@ -32,7 +33,11 @@ def auto_login_middleware(get_response):
                 and not any(request.path.startswith(p) for p in _EXEMPT_PREFIXES)):
             user = _ensure_owner()
             if user is not None:
-                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                # Аутентифицируем ТОЛЬКО на время запроса, без login(): тот заводит
+                # запись сессии в БД на каждый анонимный заход. Сайт открыт, по нему
+                # ходят боты и сканеры — так за пару недель набежало 2175 сессий.
+                # Пользователь ничего не теряет: следующий запрос авторизуется так же.
+                user.backend = 'django.contrib.auth.backends.ModelBackend'
                 request.user = user
         return get_response(request)
 

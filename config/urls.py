@@ -12,6 +12,7 @@ urlpatterns = [
     path('sw.js', pwa_views.service_worker, name='sw'),
     path('manifest.webmanifest', pwa_views.manifest, name='manifest'),
     path('offline/', pwa_views.offline, name='offline'),
+    path('healthz', pwa_views.healthz, name='healthz'),  # проверка живости для мониторинга
     path('', include('core.urls')),
     path('documents/', include('documents.urls')),
     path('calculator/', include('calculator.urls')),

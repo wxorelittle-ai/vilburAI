@@ -34,6 +34,39 @@ class BezAutoLoginTests(TestCase):
         self.assertIn('login', r.request['PATH_INFO'])
 
 
+@override_settings(AUTO_LOGIN=True, AUTO_LOGIN_USERNAME='vladelec')
+class AutoLoginBezSessiyTests(TestCase):
+    """Авто-вход не должен плодить сессии: сайт открыт, по нему ходят боты и сканеры —
+    иначе каждая их страница = строка в django_session (на бою так набежало 2175)."""
+
+    def test_ne_sozdayot_sessii_v_bd(self):
+        from django.contrib.sessions.models import Session
+        for _ in range(5):
+            self.client.cookies.clear()          # каждый раз как новый посетитель
+            self.assertEqual(self.client.get('/dashboard/').status_code, 200)
+        self.assertEqual(Session.objects.count(), 0)
+
+    def test_polzovatel_vsyo_ravno_avtorizovan(self):
+        r = self.client.get('/dashboard/')
+        self.assertTrue(r.wsgi_request.user.is_authenticated)
+        self.assertEqual(r.wsgi_request.user.username, 'vladelec')
+
+
+class HealthzTests(TestCase):
+    def test_otvechaet_ok(self):
+        r = self.client.get('/healthz')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()['status'], 'ok')
+
+    @override_settings(AUTO_LOGIN=True, AUTO_LOGIN_USERNAME='vladelec')
+    def test_ne_sozdayot_polzovatelya_i_sessiyu(self):
+        """Пинги мониторинга не должны заводить владельца и сессии."""
+        from django.contrib.sessions.models import Session
+        self.client.get('/healthz')
+        self.assertFalse(get_user_model().objects.filter(username='vladelec').exists())
+        self.assertEqual(Session.objects.count(), 0)
+
+
 class BrigadaTests(TestCase):
     def test_tarif_label(self):
         u = get_user_model().objects.create_user('bt', password='x')
