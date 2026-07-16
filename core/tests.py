@@ -40,3 +40,68 @@ class BrigadaTests(TestCase):
         b = Brigada.objects.create(user=u, nazvanie='Т', telefon='+79990000000', tarif='brigadir')
         self.assertEqual(b.tarif_label, 'Бригадир')
         self.assertEqual(str(b), 'Т')
+
+
+class DashboardDelaTests(TestCase):
+    """Лента «что горит» собирается из настоящих дедлайнов, а не из выдуманных задач."""
+
+    def setUp(self):
+        from datetime import date, timedelta
+        from decimal import Decimal
+        from objekty.models import Objekt, EtapGrafika, Material, DvizhenieDeneg
+        self.T = date.today()
+        u = get_user_model().objects.create_user('dash', password='x')
+        self.b = Brigada.objects.create(user=u, nazvanie='Т', telefon='+79990000000', tarif='pro',
+                                        data_okonchaniya_tarifa=self.T + timedelta(days=30))
+        self.ob = Objekt.objects.create(brigada=self.b, nazvanie='Объект', data_nachala=self.T,
+                                        data_okonchania_plan=self.T + timedelta(days=30),
+                                        summa_dogovora=Decimal('500000'))
+        # этап стартует через 3 дня; материал к нему просрочен (крайняя = старт-19)
+        e = EtapGrafika.objects.create(objekt=self.ob, nazvanie='Плитка', plan_objem=10,
+                                       plan_data_nachala=self.T + timedelta(days=3),
+                                       plan_data_okonchania=self.T + timedelta(days=9))
+        Material.objects.create(objekt=self.ob, etap=e, nazvanie='Керамогранит',
+                                srok_proizvodstva_dney=10, srok_dostavki_dney=5, bufer_dney=4,
+                                status=Material.STATUS_NE_ZAKAZAN)
+        # просроченный платёж от заказчика
+        DvizhenieDeneg.objects.create(objekt=self.ob, osnovanie='Аванс', summa_nachislenie=Decimal('150000'),
+                                      data_plan=self.T - timedelta(days=2),
+                                      status=DvizhenieDeneg.STATUS_OZHIDAETSYA)
+
+    def test_lenta_sobiraet_dedlayny(self):
+        from core.dashboard import blizhayshie_dela
+        dela = blizhayshie_dela(self.b)
+        tipy = {d['tip'] for d in dela}
+        self.assertIn('Материал', tipy)
+        self.assertIn('Этап', tipy)
+        self.assertIn('Деньги', tipy)
+        # просроченное — красное и идёт первым по своей дате
+        prosr = [d for d in dela if d['prosrocheno']]
+        self.assertTrue(prosr)
+        self.assertTrue(all(d['ton'] == 'red' for d in prosr))
+
+    def test_lenta_otsortirovana_po_date(self):
+        from core.dashboard import blizhayshie_dela
+        daty = [d['data'] for d in blizhayshie_dela(self.b)]
+        self.assertEqual(daty, sorted(daty))
+
+    def test_dalyokie_sobytiya_ne_popadayut(self):
+        """Горизонт 14 дней: дела за его пределами в ленту не идут."""
+        from datetime import timedelta
+        from core.dashboard import blizhayshie_dela
+        dela = blizhayshie_dela(self.b, dney=14)
+        self.assertTrue(all(d['data'] <= self.T + timedelta(days=14) for d in dela))
+
+    def test_finansy_schitayut_balans(self):
+        from decimal import Decimal
+        from core.dashboard import finansy
+        f = finansy(self.b)
+        self.assertEqual(f['ozhidaetsya'], Decimal('150000.00'))   # аванс ещё не получен
+        self.assertEqual(f['poluchen'], Decimal('0.00'))
+
+    def test_dashboard_otkryvaetsya_s_dannymi(self):
+        self.client.force_login(self.b.user)
+        r = self.client.get(reverse('core:dashboard'))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'Что горит')
+        self.assertContains(r, 'Керамогранит')

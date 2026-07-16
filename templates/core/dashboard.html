@@ -43,6 +43,85 @@
             {% endif %}
         </div>
 
+        {# ---------- Что горит: лента ближайших дел ---------- #}
+        {% if dela %}
+        <section class="mb-8">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="font-display text-lg font-bold text-grafit">Что горит</h2>
+                <a href="{% url 'objekty:postavki' %}" class="text-sm text-steel hover:text-terracotta font-medium">Поставки →</a>
+            </div>
+            <div class="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+                {% for d in dela %}
+                <a href="{{ d.url }}" class="u-lift shrink-0 w-60 rounded-2xl bg-white border-l-4 border border-sand-deep p-4 shadow-card
+                    {% if d.ton == 'red' %}border-l-terracotta{% elif d.ton == 'amber' %}border-l-amber{% elif d.ton == 'blue' %}border-l-[#5B7DA6]{% else %}border-l-steel{% endif %}">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-bold uppercase tracking-wide
+                            {% if d.ton == 'red' %}text-accent-dark{% elif d.ton == 'amber' %}text-[#7A5A2E]{% elif d.ton == 'blue' %}text-[#41618A]{% else %}text-steel{% endif %}">{{ d.tip }}</span>
+                        <span class="text-xs font-semibold {% if d.prosrocheno %}text-accent-dark{% else %}text-steel{% endif %}">{{ d.data|date:"d.m" }}</span>
+                    </div>
+                    <p class="text-sm font-semibold text-grafit leading-snug">{{ d.zagolovok|truncatechars:52 }}</p>
+                    <p class="text-xs text-steel mt-1 truncate">{{ d.podzagolovok }}</p>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {# ---------- Объекты с прогрессом ---------- #}
+        {% if objekty %}
+        <section class="mb-8">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="font-display text-lg font-bold text-grafit">Объекты</h2>
+                <a href="{% url 'objekty:list' %}" class="text-sm text-steel hover:text-terracotta font-medium">Все объекты →</a>
+            </div>
+            <div class="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+                {% for o in objekty %}
+                <a href="{% url 'objekty:detail' o.pk %}" class="u-lift shrink-0 w-64 rounded-2xl bg-grafit text-white p-4 shadow-card">
+                    <div class="flex items-center gap-3">
+                        <span class="shrink-0 w-12 h-12 rounded-full grid place-items-center font-display font-extrabold text-sm
+                            {% if o.krasnye_flagi %}bg-terracotta{% elif o.otstaet_ot_grafika %}bg-amber text-grafit{% else %}bg-[#5C8A46]{% endif %}">{{ o.procent_gotovnosti }}%</span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold truncate">{{ o.nazvanie|truncatechars:26 }}</p>
+                            <p class="text-xs text-white/60 truncate">{{ o.adres|default:'—'|truncatechars:28 }}</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 h-1.5 rounded-full bg-white/15 overflow-hidden">
+                        <div class="h-full rounded-full {% if o.krasnye_flagi %}bg-terracotta{% elif o.otstaet_ot_grafika %}bg-amber{% else %}bg-[#5C8A46]{% endif %}" style="width: {{ o.procent_gotovnosti }}%;"></div>
+                    </div>
+                    {% if o.krasnye_flagi %}
+                        <p class="text-xs text-amber mt-2 truncate">⚠ {{ o.krasnye_flagi.0 }}</p>
+                    {% else %}
+                        <p class="text-xs text-white/50 mt-2">{{ o.get_status_display }}</p>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {# ---------- Финансы ---------- #}
+        {% if finansy %}
+        <section class="mb-10">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="font-display text-lg font-bold text-grafit">Финансы по объектам</h2>
+            </div>
+            <div class="grid sm:grid-cols-3 gap-3">
+                <div class="rounded-2xl bg-grafit text-white p-5 shadow-card">
+                    <p class="text-xs text-white/60 mb-1">Баланс (получено − расход)</p>
+                    <p class="font-display text-2xl font-extrabold {% if finansy.balans < 0 %}text-terracotta{% endif %}">{{ finansy.balans }} ₽</p>
+                </div>
+                <div class="rounded-2xl bg-white border border-sand-deep p-5 shadow-card">
+                    <p class="text-xs text-steel mb-1">Ожидается от заказчиков</p>
+                    <p class="font-display text-2xl font-extrabold text-grafit">{{ finansy.ozhidaetsya }} ₽</p>
+                </div>
+                <div class="rounded-2xl bg-white border p-5 shadow-card {% if finansy.razryvy %}border-terracotta{% else %}border-sand-deep{% endif %}">
+                    <p class="text-xs text-steel mb-1">Кассовые разрывы</p>
+                    <p class="font-display text-2xl font-extrabold {% if finansy.razryvy %}text-terracotta{% else %}text-grafit{% endif %}">{{ finansy.razryvy|length }}</p>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
         <div class="grid sm:grid-cols-3 gap-4 mb-10">
             <div class="rounded-2xl border border-sand-deep bg-white p-6 shadow-card">
                 <p class="text-sm text-steel mb-1">Документов создано</p>

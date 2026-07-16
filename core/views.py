@@ -39,14 +39,19 @@ def register(request):
 @login_required
 def dashboard(request):
     """
-    Личный кабинет (раздел 7.2 ТЗ): sidebar + карточки статистики.
-    Документы и расчёты — реальные счётчики (Модули A и C). Сметы — заглушка до Модуля B.
+    Личный кабинет (раздел 7.2 ТЗ): секции «Что горит» / «Объекты» / «Финансы»
+    вместо голых счётчиков — чтобы с порога было видно, что требует действия.
     """
     from documents.models import Dokument
     from calculator.models import Raschet
     from smety.models import Smeta
+    from objekty import limits as objekty_limits
+    from . import dashboard as dash
 
     brigada = request.user.brigada
+    # объекты тянем один раз с prefetch — их читают и лента дел, и финансы
+    objekty = list(dash._objekty_brigady(brigada)) if objekty_limits.objekty_dostupny(brigada) else []
+
     context = {
         'brigada': brigada,
         'stats': {
@@ -54,6 +59,10 @@ def dashboard(request):
             'raschetov_sdelano': Raschet.objects.filter(brigada=brigada).count(),
             'smet_sozdano': Smeta.objects.filter(brigada=brigada).count(),
         },
+        'objekty_dostupny': bool(objekty) or objekty_limits.objekty_dostupny(brigada),
+        'objekty': objekty[:6],
+        'dela': dash.blizhayshie_dela(brigada, objekty=objekty)[:12] if objekty else [],
+        'finansy': dash.finansy(brigada, objekty=objekty) if objekty else None,
     }
     return render(request, 'core/dashboard.html', context)
 
