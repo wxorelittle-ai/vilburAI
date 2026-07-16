@@ -29,7 +29,10 @@
     </aside>
 
     <!-- Main -->
-    <div>
+    {# min-w-0 обязателен: у колонки грида по умолчанию min-width:auto, и она не сжимается
+       уже своего содержимого. Без него ленты ниже (flex + overflow-x-auto) не прокручиваются
+       внутри себя, а растягивают колонку по сумме карточек — страница уезжает вширь. #}
+    <div class="min-w-0">
         <h1 class="font-display text-3xl font-bold text-grafit mb-2">Привет, {{ brigada.nazvanie }}!</h1>
         <div class="flex flex-wrap items-center gap-2 text-sm mb-8">
             <span class="inline-flex items-center gap-2 rounded-full bg-white border border-sand-deep px-3 py-1 text-grafit font-semibold shadow-card">
