@@ -75,6 +75,10 @@ EOF
 else
     echo "    .env уже существует — пароль БД и настройки не трогаю"
 fi
+# Секреты (пароль БД, SECRET_KEY, API-ключи) — не для чужих глаз: только владелец
+# и группа www-data (под ней читает gunicorn). 640, а не 644 по умолчанию.
+chown "$APP_USER":www-data "$APP_DIR/.env"
+chmod 640 "$APP_DIR/.env"
 
 echo "==> [6/10] Логи и права"
 mkdir -p /var/log/brigadir_pro /run/brigadir_pro
