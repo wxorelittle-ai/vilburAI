@@ -1,29 +1,27 @@
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
-from django.utils import timezone
 
+from billing import limits as tarif_limits
 from . import service
 from .models import ProverkaZakazchika
 
 
 def proverka_dostupna(brigada) -> bool:
-    return brigada.effective_tarif in ('brigadir', 'pro')
+    """Проверка заказчика — с «Бригадира» и выше (ниже лимит 0)."""
+    return tarif_limits.dostupen(brigada, 'proverki')
 
 
 def _limit(brigada):
-    return settings.TARIFF_LIMITS.get(brigada.effective_tarif, {}).get('proverki', 0)
+    return tarif_limits.limit_dlya(brigada, 'proverki')
 
 
 def _v_mesyace(brigada) -> int:
-    now = timezone.localtime()
-    return ProverkaZakazchika.objects.filter(brigada=brigada, data__year=now.year, data__month=now.month).count()
+    return tarif_limits.za_tekushchiy_mesyac(ProverkaZakazchika.objects.filter(brigada=brigada))
 
 
 def _mozhno(brigada) -> bool:
-    limit = _limit(brigada)
-    return limit is None or _v_mesyace(brigada) < limit
+    return tarif_limits.mozhno(brigada, 'proverki', _v_mesyace(brigada))
 
 
 def _guard(request):

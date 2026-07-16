@@ -1,13 +1,13 @@
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
+from billing import limits as tarif_limits
 from documents.models import Dokument
 from . import fns
 from .excel_export import cheki_v_excel
@@ -17,23 +17,20 @@ DEN_UPLATY = 25  # срок уплаты налога (раздел «Модул
 
 
 def nalog_dostupen(brigada) -> bool:
-    return brigada.effective_tarif != 'start'
+    """Чеки ФНС — со «Самозанятого» и выше (на «Старте» лимит 0)."""
+    return tarif_limits.dostupen(brigada, 'cheki')
 
 
 def _limit_cheki(brigada):
-    return settings.TARIFF_LIMITS.get(brigada.effective_tarif, {}).get('cheki', 0)
+    return tarif_limits.limit_dlya(brigada, 'cheki')
 
 
 def _cheki_v_mesyace(brigada) -> int:
-    now = timezone.localtime()
-    return ChekFNS.objects.filter(brigada=brigada, data__year=now.year, data__month=now.month).count()
+    return tarif_limits.za_tekushchiy_mesyac(ChekFNS.objects.filter(brigada=brigada))
 
 
 def _mozhno_probit(brigada) -> bool:
-    limit = _limit_cheki(brigada)
-    if limit is None:
-        return True
-    return _cheki_v_mesyace(brigada) < limit
+    return tarif_limits.mozhno(brigada, 'cheki', _cheki_v_mesyace(brigada))
 
 
 def _napominanie():

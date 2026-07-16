@@ -9,6 +9,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 
 from core.models import Brigada
+from billing import limits as tarif_limits
 from billing.limits import check_limit
 from billing.models import LimitTracker, Platezh
 from documents.models import Dokument
@@ -59,6 +60,52 @@ class LimitTests(TestCase):
         """Лимиты считаются по действующему тарифу, а не по полю tarif."""
         b = brig(tarif='pro', dney=-1)          # подписка истекла
         self.assertEqual(check_limit(b, 'dokumenty').limit, 1)   # как на «Старте»
+
+
+class EdinyySloyLimitovTests(TestCase):
+    """Доступность модулей выводится из тарифной сетки, а не из хардкода имён тарифов."""
+
+    def test_semantika_limita(self):
+        b = brig(tarif='brigadir')
+        # None = безлимит, 0 = недоступно, N = предел
+        self.assertIsNone(tarif_limits.limit_dlya(b, 'dokumenty'))       # безлимит
+        self.assertTrue(tarif_limits.dostupen(b, 'dokumenty'))
+        self.assertEqual(tarif_limits.limit_dlya(brig(tarif='start'), 'objekty'), 0)
+        self.assertFalse(tarif_limits.dostupen(brig(tarif='start'), 'objekty'))
+
+    def test_neizvestny_resurs_nedostupen(self):
+        """Опечатка в названии ресурса не должна давать безлимит."""
+        b = brig(tarif='pro')
+        self.assertEqual(tarif_limits.limit_dlya(b, 'nesushchestvuyushchiy'), 0)
+        self.assertFalse(tarif_limits.dostupen(b, 'nesushchestvuyushchiy'))
+
+    def test_proverit_i_mozhno(self):
+        b = brig(tarif='brigadir')   # proverki = 3
+        self.assertFalse(tarif_limits.proverit(b, 'proverki', 2).exceeded)
+        self.assertTrue(tarif_limits.proverit(b, 'proverki', 3).exceeded)
+        self.assertTrue(tarif_limits.mozhno(b, 'proverki', 2))
+        self.assertFalse(tarif_limits.mozhno(b, 'proverki', 3))
+
+    def test_dostupnost_moduley_po_tarifam(self):
+        """Чеки — с «Самозанятого», проверка заказчика и объекты — с «Бригадира»."""
+        from nalogi.views import nalog_dostupen
+        from proverka.views import proverka_dostupna
+        from objekty.limits import objekty_dostupny
+
+        self.assertFalse(nalog_dostupen(brig(tarif='start')))
+        self.assertTrue(nalog_dostupen(brig(tarif='samozanyaty')))
+
+        self.assertFalse(proverka_dostupna(brig(tarif='samozanyaty')))
+        self.assertTrue(proverka_dostupna(brig(tarif='brigadir')))
+
+        self.assertFalse(objekty_dostupny(brig(tarif='samozanyaty')))
+        self.assertTrue(objekty_dostupny(brig(tarif='pro')))
+
+    def test_istyokshaya_podpiska_otbiraet_dostup(self):
+        """Истёк PRO → фактически «Старт» → модули закрываются."""
+        from objekty.limits import objekty_dostupny
+        b = brig(tarif='pro', dney=-1)
+        self.assertFalse(objekty_dostupny(b))
 
 
 class WebhookBezopasnostTests(TestCase):
