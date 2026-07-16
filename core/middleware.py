@@ -16,7 +16,13 @@ from django.conf import settings
 from django.contrib.auth import login, get_user_model
 from django.utils import timezone
 
-_EXEMPT_PREFIXES = ('/admin', '/static', '/media', '/sw.js', '/manifest', '/offline', '/sign/')
+# Страницы, которые владелец ОТПРАВЛЯЕТ третьим лицам, обязаны остаться анонимными:
+# иначе ссылка на смету или на подписание превращается в пропуск в кабинет со всеми
+# документами, объектами и финансами (раздел 8 ТЗ — публичная смета только на чтение).
+#   /s/    — публичная смета для заказчика
+#   /sign/ — страница подписания документа (ПЭП)
+_EXEMPT_PREFIXES = ('/admin', '/static', '/media', '/sw.js', '/manifest', '/offline',
+                    '/sign/', '/s/')
 
 
 def auto_login_middleware(get_response):
