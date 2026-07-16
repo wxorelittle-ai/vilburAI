@@ -67,6 +67,8 @@ class Objekt(models.Model):
         verbose_name = 'Объект'
         verbose_name_plural = 'Объекты'
         ordering = ['-data_sozdaniya']
+        # список объектов бригады и проверка лимита (exclude по статусу)
+        indexes = [models.Index(fields=['brigada', 'status'])]
 
     def __str__(self):
         return self.nazvanie
@@ -261,6 +263,7 @@ class Material(models.Model):
         verbose_name = 'Материал'
         verbose_name_plural = 'Материалы'
         ordering = ['etap__poryadok', 'nazvanie']
+        indexes = [models.Index(fields=['objekt', 'status'])]   # экран поставок
 
     def __str__(self):
         return self.nazvanie

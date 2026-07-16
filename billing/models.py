@@ -34,6 +34,10 @@ class Platezh(models.Model):
         verbose_name = 'Платёж'
         verbose_name_plural = 'Платежи'
         ordering = ['-data']
+        indexes = [
+            models.Index(fields=['brigada', '-data']),
+            models.Index(fields=['yookassa_id']),   # поиск платежа при обработке вебхука
+        ]
 
     def __str__(self):
         return f'{self.brigada.nazvanie} — {self.tarif} — {self.summa} ₽ ({self.get_status_display()})'

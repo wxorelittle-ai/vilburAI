@@ -44,6 +44,8 @@ class ChekFNS(models.Model):
         verbose_name = 'Чек ФНС'
         verbose_name_plural = 'Чеки ФНС'
         ordering = ['-data']
+        # список чеков и месячная сводка/лимит — filter(brigada) + по дате
+        indexes = [models.Index(fields=['brigada', '-data'])]
 
     def __str__(self):
         return f'Чек {self.summa} ₽ — {self.get_status_display()}'

@@ -67,6 +67,7 @@ class Raschet(models.Model):
         verbose_name = 'Расчёт себестоимости'
         verbose_name_plural = 'Расчёты себестоимости'
         ordering = ['-data']
+        indexes = [models.Index(fields=['brigada', '-data'])]
 
     def __str__(self):
         return f'Расчёт от {self.data:%d.%m.%Y} — {self.ploshad} м²'

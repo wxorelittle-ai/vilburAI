@@ -61,6 +61,7 @@ class ProverkaZakazchika(models.Model):
         verbose_name = 'Проверка заказчика'
         verbose_name_plural = 'Проверки заказчиков'
         ordering = ['-data']
+        indexes = [models.Index(fields=['brigada', '-data'])]
 
     def __str__(self):
         return f'{self.znachenie} — {self.get_status_riska_display()}'

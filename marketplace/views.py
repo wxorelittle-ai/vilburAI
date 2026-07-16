@@ -3,7 +3,6 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 
 from core.models import Brigada
-from documents.models import Dokument
 from .forms import OtzyvForm, IzlishekForm, TenderForm, OtklikForm
 from .models import Otzyv, IzlishekMateriala, Tender, TenderOtklik
 from . import reputation
@@ -23,18 +22,28 @@ def katalog(request):
     if region:
         brigady = brigady.filter(region__icontains=region)
 
+    # Всё считаем пакетно: раньше на каждую бригаду уходило 5–6 запросов
+    # (рейтинг, «подтверждена», наличие документов/отзывов) — при росте каталога
+    # это N+1. Теперь несколько запросов на весь список.
+    brigady = list(brigady)
+    ids = [b.pk for b in brigady]
+    reytingi = reputation.reytingi(ids)
+    dok_counts = reputation.kolvo_dokumentov(ids)
+    podtv_ids = reputation.podtverzhdennye(ids, dok_counts=dok_counts)
+
     kartochki = []
     for b in brigady:
+        r = reytingi.get(b.pk, {'srednyaya': None, 'kolvo': 0})
         # показываем только «живые» профили: есть документы или отзывы
-        if not (b.otzyvy.exists() or Dokument.objects.filter(brigada=b).exists()):
+        if not (r['kolvo'] or dok_counts.get(b.pk)):
             continue
-        podtv = reputation.podtverzhdena(b)
+        podtv = b.pk in podtv_ids
         if tolko_podtv and not podtv:
             continue
-        kartochki.append({'brigada': b, 'reyting': reputation.reyting(b), 'podtverzhdena': podtv})
+        kartochki.append({'brigada': b, 'reyting': r, 'podtverzhdena': podtv})
     kartochki.sort(key=lambda k: (k['reyting']['srednyaya'] or 0, k['reyting']['kolvo']), reverse=True)
 
-    regiony = sorted({b.region for b in Brigada.objects.exclude(region='') if b.region})
+    regiony = sorted(set(Brigada.objects.exclude(region='').values_list('region', flat=True)))
     return render(request, 'marketplace/katalog.html', {
         'kartochki': kartochki, 'q': q, 'region': region, 'tolko_podtv': tolko_podtv, 'regiony': regiony,
     })

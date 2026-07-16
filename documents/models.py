@@ -58,6 +58,8 @@ class Dokument(models.Model):
         verbose_name = 'Документ'
         verbose_name_plural = 'Документы'
         ordering = ['-data_sozdaniya']
+        # список документов бригады — filter(brigada) + order_by(-data_sozdaniya)
+        indexes = [models.Index(fields=['brigada', '-data_sozdaniya'])]
 
     def __str__(self):
         return f'{self.get_tip_display()} №{self.nomer or self.pk} — {self.zakazchik}'

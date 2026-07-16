@@ -92,6 +92,7 @@ class Smeta(models.Model):
         verbose_name = 'Смета'
         verbose_name_plural = 'Сметы'
         ordering = ['-data']
+        indexes = [models.Index(fields=['brigada', '-data'])]
 
     def __str__(self):
         return f'Смета №{self.nomer or self.pk} — {self.nazvanie}'
