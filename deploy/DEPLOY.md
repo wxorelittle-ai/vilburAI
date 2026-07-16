@@ -156,21 +156,39 @@ sudo -u brigadir /opt/brigadir_pro/deploy/deploy.sh
 
 ## 5. Бэкапы (обязательное требование, раздел 8 ТЗ)
 
-```bash
-sudo crontab -e
-# добавить строку:
-0 3 * * * /opt/brigadir_pro/deploy/backup.sh >> /var/log/brigadir_pro/backup.log 2>&1
+**Ставятся автоматически** — `bootstrap.sh` добавляет задание в cron root:
+
+```
+0 3 * * * bash /opt/brigadir_pro/deploy/backup.sh >> /var/log/brigadir_pro/backup.log 2>&1
 ```
 
-`deploy/backup.sh` ежедневно в 03:00 создаёт сжатый дамп PostgreSQL и архив папки
-`media/` (логотипы, PDF документов и смет) в `/var/backups/brigadir_pro/`, хранит
-последние 14 дней и удаляет более старые копии.
+Ежедневно в 03:00 создаётся сжатый дамп PostgreSQL и архив `media/` (логотипы, PDF
+документов и смет, фото-акты) в `/var/backups/brigadir_pro/`; хранятся последние
+14 дней. Дамп снимается от пользователя `postgres` (peer-аутентификация) — пароль
+в cron не нужен. Если дамп получился подозрительно мал, скрипт падает с ошибкой:
+пустой бэкап хуже, чем его отсутствие.
+
+Проверить, что задание на месте: `crontab -l`. Прогнать вручную: `bash /opt/brigadir_pro/deploy/backup.sh`.
 
 **Восстановление из бэкапа:**
 
 ```bash
-gunzip -c /var/backups/brigadir_pro/brigadir_pro_ДАТА.sql.gz | psql -U brigadir_pro -h 127.0.0.1 brigadir_pro
+# База (дамп содержит DROP/CREATE — восстанавливаем от postgres, пароль не нужен)
+gunzip -c /var/backups/brigadir_pro/brigadir_pro_ДАТА.sql.gz | sudo -u postgres psql brigadir_pro
+# Медиа
 tar -xzf /var/backups/brigadir_pro/media_ДАТА.tar.gz -C /opt/brigadir_pro/
+sudo systemctl restart brigadir_pro
+```
+
+**Проверка восстановления без риска для боевой базы** (ТЗ требует хотя бы раз
+убедиться, что копия разворачивается) — разворачиваем во временную базу и сверяем:
+
+```bash
+DUMP=$(ls -t /var/backups/brigadir_pro/brigadir_pro_*.sql.gz | head -1)
+sudo -u postgres psql -c "CREATE DATABASE restore_test;"
+gunzip -c "$DUMP" | sudo -u postgres psql restore_test
+sudo -u postgres psql -tAc "SELECT count(*) FROM documents_dokument;" restore_test   # сверить с боевой
+sudo -u postgres psql -c "DROP DATABASE restore_test;"
 ```
 
 ## 6. Мониторинг (раздел 10 ТЗ, Этап 6)
