@@ -67,7 +67,28 @@ class HealthzTests(TestCase):
         self.assertEqual(Session.objects.count(), 0)
 
 
-class BrigadaTests(TestCase):
+@override_settings(AUTO_LOGIN=True, AUTO_LOGIN_USERNAME='vladelec')
+class ShablonyNeTekutTests(TestCase):
+    """В отрисованной странице не должно остаться сырого синтаксиса шаблонов.
+
+    Повод: `{# ... #}` в Django — ОДНОСТРОЧНЫЙ. Многострочный комментарий не
+    распознаётся и выводится на страницу видимым текстом; в шапке он вдобавок стал
+    элементом флекса и ломал вёрстку (страница 426px при экране 375).
+    Для многострочных — только {% comment %}.
+    """
+
+    STRANICY = ['/dashboard/', '/documents/', '/smety/', '/objekty/', '/billing/',
+                '/nalogi/', '/proverka/', '/market/', '/profile/']
+
+    def test_net_syrogo_sintaksisa_shablonov(self):
+        # Только {# и {% : `}}` и `{{` дают ложные срабатывания на инлайновом JS
+        # (например, `catch(e){}})();` в шапке).
+        for url in self.STRANICY:
+            with self.subTest(url=url):
+                html = self.client.get(url).content.decode()
+                for marker in ('{#', '{%'):
+                    self.assertNotIn(marker, html,
+                                     f'на {url} в HTML протёк шаблонный тег {marker}')
     def test_tarif_label(self):
         u = get_user_model().objects.create_user('bt', password='x')
         b = Brigada.objects.create(user=u, nazvanie='Т', telefon='+79990000000', tarif='brigadir')

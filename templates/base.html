@@ -115,9 +115,11 @@
             </a>
 
             {% if user.is_authenticated %}
-            {# lg, а не md: логотип + 6 пунктов + кнопки справа требуют ~950px, и в зазоре
+            {% comment %}
+               lg, а не md: логотип + 6 пунктов + кнопки справа требуют ~950px, и в зазоре
                768–1023px шапка рвалась — правая группа вылезала за экран. lg совпадает с
-               брейкпоинтом бокового меню дашборда. #}
+               брейкпоинтом бокового меню дашборда.
+            {% endcomment %}
             <div class="hidden lg:flex items-center gap-1 text-sm">
                 <a href="{% url 'core:dashboard' %}" class="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Кабинет</a>
                 <a href="{% url 'documents:list' %}" class="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Документы</a>
