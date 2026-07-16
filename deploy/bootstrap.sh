@@ -117,7 +117,18 @@ ln -sf /etc/nginx/sites-available/brigadir_pro /etc/nginx/sites-enabled/brigadir
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
-echo "==> [10/10] SSL (Let's Encrypt)"
+echo "==> [10/11] Ежедневный бэкап в cron (раздел 8 ТЗ)"
+# Ставим сами: раньше команду только печатали в конце, и на практике бэкап
+# никто не включал — сервер месяцами жил без резервных копий.
+CRON_LINE="0 3 * * * bash ${APP_DIR}/deploy/backup.sh >> /var/log/brigadir_pro/backup.log 2>&1"
+if crontab -l 2>/dev/null | grep -q "deploy/backup.sh"; then
+    echo "    бэкап уже в cron"
+else
+    ( crontab -l 2>/dev/null; echo "$CRON_LINE" ) | crontab -
+    echo "    бэкап добавлен в cron (ежедневно в 03:00)"
+fi
+
+echo "==> [11/11] SSL (Let's Encrypt)"
 if certbot --nginx -d "${DOMAIN}" -d "www.${DOMAIN}" --non-interactive --agree-tos -m "${EMAIL}" --redirect; then
     echo "    SSL выпущен, HTTP -> HTTPS настроен."
 else
