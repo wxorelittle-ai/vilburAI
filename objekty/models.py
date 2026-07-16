@@ -25,7 +25,14 @@ def money(value) -> Decimal:
 
 
 class Objekt(models.Model):
-    """Карточка объекта. Создаётся вручную или автоматически из подписанной сметы."""
+    """Карточка объекта. Создаётся вручную или автоматически из подписанной сметы.
+
+    Сводные показатели (готовность, деньги, светофор) — cached_property: они читаются
+    шаблоном по несколько раз и обходят все реляции, поэтому кешируются на время запроса
+    (вместе с prefetch_related в obekty_list это ~9 SQL вместо ~380).
+    ВАЖНО: значение кешируется на экземпляре. Если меняете этапы/материалы/деньги и тут же
+    хотите свежий показатель — перечитайте объект из БД (Objekt.objects.get(pk=...)).
+    """
 
     STATUS_ACTIVE = 'active'
     STATUS_COMPLETED = 'completed'
@@ -189,18 +196,18 @@ class EtapGrafika(models.Model):
     def __str__(self):
         return self.nazvanie
 
-    @cached_property
+    @property
     def procent(self) -> int:
         if not self.plan_objem:
             return 0
         return int((self.fact_objem / self.plan_objem * 100).to_integral_value(rounding=ROUND_HALF_UP))
 
-    @cached_property
+    @property
     def perezakryt(self) -> bool:
         """Факт превышает план — предупреждение о перезакрытии."""
         return self.fact_objem > self.plan_objem
 
-    @cached_property
+    @property
     def status_temp(self) -> str:
         """'opustil' по темпу: opережение / v_grafike / otstavanie / gotov."""
         if self.plan_objem and self.fact_objem >= self.plan_objem:
@@ -217,7 +224,7 @@ class EtapGrafika(models.Model):
             return 'operezhenie'
         return 'v_grafike'
 
-    @cached_property
+    @property
     def status_temp_label(self) -> str:
         return {
             'gotov': 'Выполнен',
@@ -258,7 +265,7 @@ class Material(models.Model):
     def __str__(self):
         return self.nazvanie
 
-    @cached_property
+    @property
     def data_zakaza_kraynyaya(self):
         """Крайняя дата заказа = дата НАЧАЛА этапа − производство − доставка − буфер.
         Требование ТЗ (Addendum №2, раздел 16): всегда от даты начала, не окончания."""
@@ -268,14 +275,14 @@ class Material(models.Model):
             days=self.srok_proizvodstva_dney + self.srok_dostavki_dney + self.bufer_dney
         )
 
-    @cached_property
+    @property
     def prosrocheno(self) -> bool:
         if self.status in (self.STATUS_ZAKAZAN, self.STATUS_V_PUTI, self.STATUS_NA_OBEKTE):
             return False
         kraynyaya = self.data_zakaza_kraynyaya
         return bool(kraynyaya and timezone.localdate() > kraynyaya)
 
-    @cached_property
+    @property
     def dney_do_krayney_daty(self):
         """Сколько дней осталось до крайней даты заказа (отрицательное — просрочено)."""
         kraynyaya = self.data_zakaza_kraynyaya
@@ -283,7 +290,7 @@ class Material(models.Model):
             return None
         return (kraynyaya - timezone.localdate()).days
 
-    @cached_property
+    @property
     def data_postavki_ozhidaemaya(self):
         """Ожидаемая дата поставки на объект = дата заказа + производство + доставка.
         Считается для уже заказанных материалов (заказан / в пути)."""
@@ -291,13 +298,13 @@ class Material(models.Model):
             return self.data_zakaza_fakt + timedelta(days=self.srok_proizvodstva_dney + self.srok_dostavki_dney)
         return None
 
-    @cached_property
+    @property
     def postavka_zaderzhana(self) -> bool:
         """Заказанный материал, ожидаемая поставка которого уже просрочена, но он ещё не на объекте."""
         d = self.data_postavki_ozhidaemaya
         return bool(d and timezone.localdate() > d)
 
-    @cached_property
+    @property
     def srochno_zakazat(self) -> bool:
         """Ещё не заказан, крайняя дата — в ближайшие 7 дней (но ещё не просрочена)."""
         if self.status != self.STATUS_NE_ZAKAZAN or self.prosrocheno:
@@ -305,7 +312,7 @@ class Material(models.Model):
         dney = self.dney_do_krayney_daty
         return dney is not None and 0 <= dney <= 7
 
-    @cached_property
+    @property
     def status_display_effective(self) -> str:
         if self.prosrocheno:
             return 'Просрочен заказ'
@@ -313,7 +320,7 @@ class Material(models.Model):
             return 'Поставка задержана'
         return self.get_status_display()
 
-    @cached_property
+    @property
     def postavka_kategoriya(self):
         """Категория для экрана поставок: prosrochen_zakaz / zaderzhka_postavki /
         zakazat_srochno / ozhidaetsya / ne_zakazan / na_obekte."""
@@ -350,22 +357,22 @@ class OplataMontajnika(models.Model):
     def __str__(self):
         return f'{self.montajnik_fio} — {self.mesyats:%m.%Y}'
 
-    @cached_property
+    @property
     def prevyshenie_grafika(self) -> bool:
         return self.fact_objem_mesyats > self.plan_objem_mesyats
 
-    @cached_property
+    @property
     def objem_k_oplate(self) -> Decimal:
         """Объём к оплате: факт, но не выше планового — если не подтверждена оплата сверх графика."""
         if self.oplacheno_sverh_grafika:
             return self.fact_objem_mesyats
         return min(self.fact_objem_mesyats, self.plan_objem_mesyats)
 
-    @cached_property
+    @property
     def summa_k_oplate(self) -> Decimal:
         return money(self.objem_k_oplate * self.rascenka)
 
-    @cached_property
+    @property
     def ostatok_k_vyplate(self) -> Decimal:
         return money(self.summa_k_oplate - self.summa_oplacheno)
 
@@ -389,7 +396,7 @@ class RashodMesyachny(models.Model):
     def __str__(self):
         return f'Расходы {self.mesyats:%m.%Y}'
 
-    @cached_property
+    @property
     def itogo(self) -> Decimal:
         return money(self.sutochnye + self.arenda_kvartiry + self.oplata_mastera + self.dolya_ofisa + self.prochee)
 
@@ -422,7 +429,7 @@ class DvizhenieDeneg(models.Model):
     def __str__(self):
         return f'{self.osnovanie} — {self.summa_nachislenie} ₽'
 
-    @cached_property
+    @property
     def summa_za_vychetom_garantii(self) -> Decimal:
         procent = self.objekt.garantiynoe_uderzhanie_procent
         return money(self.summa_nachislenie * (100 - procent) / 100)
