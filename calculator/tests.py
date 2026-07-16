@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.utils import timezone
 
 from core.models import Brigada
 from calculator.models import Raschet
@@ -13,7 +14,7 @@ from calculator.models import Raschet
 def brig():
     u = get_user_model().objects.create_user('calc_user', password='x')
     return Brigada.objects.create(user=u, nazvanie='Т', telefon='+79990000000', tarif='pro',
-                                  data_okonchaniya_tarifa=date.today() + timedelta(days=30))
+                                  data_okonchaniya_tarifa=timezone.localdate() + timedelta(days=30))
 
 
 class RaschetTests(TestCase):

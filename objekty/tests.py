@@ -23,11 +23,11 @@ def make_brigada(tarif='brigadir', **kw):
     u = get_user_model().objects.create_user(f'u{get_user_model().objects.count()}', password='x')
     return Brigada.objects.create(
         user=u, nazvanie='Тест', telefon='+79990000000', tarif=tarif,
-        data_okonchaniya_tarifa=date.today() + timedelta(days=30), **kw)
+        data_okonchaniya_tarifa=timezone.localdate() + timedelta(days=30), **kw)
 
 
 def make_objekt(brigada, **kw):
-    T = date.today()
+    T = timezone.localdate()
     defaults = dict(nazvanie='Об', data_nachala=T - timedelta(days=10),
                     data_okonchania_plan=T + timedelta(days=20), summa_dogovora=Decimal('1000000'),
                     garantiynoe_uderzhanie_procent=5)
@@ -40,7 +40,7 @@ class MaterialTests(TestCase):
         """ТЗ раздел 16: крайняя дата заказа = начало этапа − произв − доставка − буфер."""
         b = make_brigada()
         ob = make_objekt(b)
-        T = date.today()
+        T = timezone.localdate()
         e = EtapGrafika.objects.create(objekt=ob, nazvanie='Э', plan_objem=10,
                                        plan_data_nachala=T + timedelta(days=30),
                                        plan_data_okonchania=T + timedelta(days=40))
@@ -49,7 +49,7 @@ class MaterialTests(TestCase):
         self.assertEqual(m.data_zakaza_kraynyaya, e.plan_data_nachala - timedelta(days=19))
 
     def test_prosrocheno_tolko_dlya_nezakazannyh(self):
-        b = make_brigada(); ob = make_objekt(b); T = date.today()
+        b = make_brigada(); ob = make_objekt(b); T = timezone.localdate()
         e = EtapGrafika.objects.create(objekt=ob, nazvanie='Э', plan_objem=10,
                                        plan_data_nachala=T + timedelta(days=1),
                                        plan_data_okonchania=T + timedelta(days=5))
@@ -68,7 +68,7 @@ class OplataTests(TestCase):
         """ТЗ раздел 16: без явного флага объём к оплате не выше планового месяца."""
         b = make_brigada(); ob = make_objekt(b)
         o = OplataMontajnika(objekt=ob, montajnik_fio='И', rascenka=Decimal('300'),
-                             mesyats=date.today().replace(day=1),
+                             mesyats=timezone.localdate().replace(day=1),
                              plan_objem_mesyats=Decimal('100'), fact_objem_mesyats=Decimal('130'))
         self.assertTrue(o.prevyshenie_grafika)
         self.assertEqual(o.objem_k_oplate, Decimal('100'))          # cap
@@ -81,14 +81,14 @@ class DengiTests(TestCase):
     def test_garantiynoe_uderzhanie(self):
         b = make_brigada(); ob = make_objekt(b, garantiynoe_uderzhanie_procent=5)
         d = DvizhenieDeneg(objekt=ob, osnovanie='Этап', summa_nachislenie=Decimal('100000'),
-                           data_plan=date.today())
+                           data_plan=timezone.localdate())
         self.assertEqual(d.summa_za_vychetom_garantii, Decimal('95000.00'))
 
     def test_kassovy_razryv(self):
         b = make_brigada(); ob = make_objekt(b)
         DvizhenieDeneg.objects.create(objekt=ob, osnovanie='Аванс', summa_nachislenie=Decimal('50000'),
-                                      data_plan=date.today(), status=DvizhenieDeneg.STATUS_POLUCHENO)
-        RashodMesyachny.objects.create(objekt=ob, mesyats=date.today().replace(day=1),
+                                      data_plan=timezone.localdate(), status=DvizhenieDeneg.STATUS_POLUCHENO)
+        RashodMesyachny.objects.create(objekt=ob, mesyats=timezone.localdate().replace(day=1),
                                        sutochnye=Decimal('80000'))
         ob = Objekt.objects.get(pk=ob.pk)
         self.assertEqual(ob.kassovy_razryv, Decimal('-30000.00'))
@@ -98,7 +98,7 @@ class DengiTests(TestCase):
 class SvetoforTests(TestCase):
     def test_otstavanie_zhyoltoe_ne_krasnoe(self):
         """ТЗ 7.6: отставание — жёлтый уровень, не красный."""
-        b = make_brigada(); ob = make_objekt(b); T = date.today()
+        b = make_brigada(); ob = make_objekt(b); T = timezone.localdate()
         # этап в разгаре, факт сильно ниже ожидаемого → отставание
         EtapGrafika.objects.create(objekt=ob, nazvanie='Э', plan_objem=Decimal('100'),
                                    fact_objem=Decimal('5'),
@@ -109,7 +109,7 @@ class SvetoforTests(TestCase):
         self.assertFalse(any('Отставание' in f for f in ob.krasnye_flagi))
 
     def test_prosrochka_materiala_krasnoe(self):
-        b = make_brigada(); ob = make_objekt(b); T = date.today()
+        b = make_brigada(); ob = make_objekt(b); T = timezone.localdate()
         e = EtapGrafika.objects.create(objekt=ob, nazvanie='Э', plan_objem=10, fact_objem=10,
                                        plan_data_nachala=T + timedelta(days=1),
                                        plan_data_okonchania=T + timedelta(days=5))

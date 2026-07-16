@@ -7,6 +7,7 @@ from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from django.urls import reverse
 
 from core.models import Brigada
@@ -21,7 +22,7 @@ SMS_KEY = dict(SMS_API_KEY='real-key')
 def brigada(tarif='brigadir', uniq='p'):
     u = get_user_model().objects.create_user(f'{uniq}{get_user_model().objects.count()}', password='x')
     return Brigada.objects.create(user=u, nazvanie='Т', telefon='+79990000000', tarif=tarif,
-                                  data_okonchaniya_tarifa=date.today() + timedelta(days=30))
+                                  data_okonchaniya_tarifa=timezone.localdate() + timedelta(days=30))
 
 
 def dok(b=None):

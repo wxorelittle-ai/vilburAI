@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test import TestCase
+from django.utils import timezone
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
@@ -20,7 +21,7 @@ def brigada(n, tarif='pro'):
     u = get_user_model().objects.create_user(f'm{n}', password='x')
     return Brigada.objects.create(user=u, nazvanie=f'Бригада {n}', telefon='+79990000000',
                                   region='Тюмень', tarif=tarif,
-                                  data_okonchaniya_tarifa=date.today() + timedelta(days=30))
+                                  data_okonchaniya_tarifa=timezone.localdate() + timedelta(days=30))
 
 
 def dokument(b):

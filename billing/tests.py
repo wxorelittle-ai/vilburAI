@@ -7,6 +7,7 @@ from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from core.models import Brigada
 from billing import limits as tarif_limits
@@ -23,7 +24,7 @@ def brig(tarif='start', dney=30, uniq='b'):
     u = get_user_model().objects.create_user(f'{uniq}{get_user_model().objects.count()}', password='x')
     return Brigada.objects.create(
         user=u, nazvanie='Т', telefon='+79990000000', tarif=tarif,
-        data_okonchaniya_tarifa=(date.today() + timedelta(days=dney)) if dney is not None else None)
+        data_okonchaniya_tarifa=(timezone.localdate() + timedelta(days=dney)) if dney is not None else None)
 
 
 class TarifTests(TestCase):

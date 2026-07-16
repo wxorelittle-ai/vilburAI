@@ -2,6 +2,7 @@
 """Тесты ядра: авто-вход владельца (однопользовательский режим) и отсутствие лендинга."""
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from django.urls import reverse
 
 from core.models import Brigada
@@ -89,6 +90,9 @@ class ShablonyNeTekutTests(TestCase):
                 for marker in ('{#', '{%'):
                     self.assertNotIn(marker, html,
                                      f'на {url} в HTML протёк шаблонный тег {marker}')
+
+
+class BrigadaTests(TestCase):
     def test_tarif_label(self):
         u = get_user_model().objects.create_user('bt', password='x')
         b = Brigada.objects.create(user=u, nazvanie='Т', telefon='+79990000000', tarif='brigadir')
@@ -103,7 +107,7 @@ class DashboardDelaTests(TestCase):
         from datetime import date, timedelta
         from decimal import Decimal
         from objekty.models import Objekt, EtapGrafika, Material, DvizhenieDeneg
-        self.T = date.today()
+        self.T = timezone.localdate()
         u = get_user_model().objects.create_user('dash', password='x')
         self.b = Brigada.objects.create(user=u, nazvanie='Т', telefon='+79990000000', tarif='pro',
                                         data_okonchaniya_tarifa=self.T + timedelta(days=30))

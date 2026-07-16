@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from django.urls import reverse
 
 from core.models import Brigada
@@ -22,7 +23,7 @@ def brigada(uniq='s'):
     u = get_user_model().objects.create_user(f'{uniq}{get_user_model().objects.count()}', password='x')
     return Brigada.objects.create(user=u, nazvanie='Бригада СибСтрой', telefon=TELEFON,
                                   rekvizity=REKVIZITY, tarif='pro',
-                                  data_okonchaniya_tarifa=date.today() + timedelta(days=30))
+                                  data_okonchaniya_tarifa=timezone.localdate() + timedelta(days=30))
 
 
 def smeta_s_rabotami(b=None, publish=True):
