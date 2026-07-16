@@ -143,8 +143,14 @@
                 <button type="button" data-install class="hidden text-sm px-3 py-2 rounded-lg bg-amber/20 text-amber hover:bg-amber/30 transition font-semibold">Установить</button>
                 <button type="button" data-theme-toggle class="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 transition text-base leading-none" aria-label="Тёмная тема">☾</button>
                 <a href="{% url 'core:login' %}" class="text-sm text-white/80 hover:text-amber transition px-2">Войти</a>
-                <a href="{% url 'core:register' %}" class="text-sm px-4 py-2.5 rounded-lg bg-terracotta hover:bg-accent-dark transition font-semibold shadow-lift">
-                    Начать бесплатно
+                {% comment %}
+                   На узком экране длинная надпись не влезала: логотип + кнопки давали 409px
+                   при 375 — шапка вылезала за край на публичной смете, которую заказчик
+                   открывает с телефона. Ниже sm показываем короткое «Начать».
+                {% endcomment %}
+                <a href="{% url 'core:register' %}" class="text-sm px-3 sm:px-4 py-2.5 rounded-lg bg-terracotta hover:bg-accent-dark transition font-semibold shadow-lift whitespace-nowrap">
+                    <span class="sm:hidden">Начать</span>
+                    <span class="hidden sm:inline">Начать бесплатно</span>
                 </a>
             </div>
             {% endif %}
