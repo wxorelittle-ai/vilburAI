@@ -1,16 +1,18 @@
 {% load static %}// Service Worker Вильбур AI (раздел 7.5 ТЗ)
-const VERSION = 'brigadir-v1';
+const VERSION = 'wilbur-v2';
 const STATIC_CACHE = VERSION + '-static';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const OFFLINE_URL = '/offline/';
 
-// Оболочка приложения — кэшируется при установке
+// Оболочка приложения — кэшируется при установке.
+// CSS теперь свой (не Play CDN), поэтому офлайн приложение остаётся со стилями.
 const PRECACHE = [
   OFFLINE_URL,
+  '{% static "css/app.css" %}',
   '{% static "js/app.js" %}',
   '{% static "js/offline-calc.js" %}',
   '{% static "icons/icon-192.png" %}',
-  'https://cdn.tailwindcss.com',
+  '{% static "img/wilbur-horse-white.png" %}',
 ];
 
 self.addEventListener('install', (event) => {
@@ -50,7 +52,6 @@ self.addEventListener('fetch', (event) => {
   // Статика/CDN/шрифты: cache-first с дозаписью
   if (
     url.origin === location.origin ||
-    url.host.includes('cdn.tailwindcss.com') ||
     url.host.includes('fonts.googleapis.com') ||
     url.host.includes('fonts.gstatic.com')
   ) {

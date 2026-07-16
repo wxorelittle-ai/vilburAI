@@ -115,7 +115,16 @@ Docker собирает и запускает приложение в изоли
 ## Стек
 
 Django 5.0 · Python 3.12 · PostgreSQL 15+ (SQLite для локальной разработки) ·
-HTMX · Tailwind CSS (CDN) · xhtml2pdf + python-docx + openpyxl · ЮKassa · Gunicorn + Nginx
+Tailwind CSS (собранный статический CSS) · xhtml2pdf + python-docx + openpyxl ·
+ЮKassa · Gunicorn + Nginx
+
+**Стили** собраны заранее в `static/css/app.css`. Play CDN не используем: он тянул
+~400 КБ JS-компилятора на каждую загрузку и оставлял приложение без стилей офлайн,
+что противоречило PWA-требованию раздела 7.5 ТЗ. Пересобрать после правки шаблонов:
+
+```bash
+npx tailwindcss@3 -c tailwind.config.js -i static/css/tailwind.src.css -o static/css/app.css --minify
+```
 
 ## Установка (локально)
 

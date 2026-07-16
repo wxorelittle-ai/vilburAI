@@ -20,42 +20,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Официальный Tailwind Play CDN — в отличие от precompiled-сборки читает tailwind.config,
-         поэтому фирменные цвета ниже реально применяются. -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.10/htmx.min.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
-                        display: ['Manrope', 'Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        // Фирменная палитра Вильбур AI
-                        grafit:  '#262421',
-                        terracotta: '#C1502E',
-                        sand:    '#F3EDE4',
-                        steel:   '#6B6862',
-                        amber:   '#D89A54',
-                        // Тинты
-                        'sand-deep': '#E7DDCE',
-                        'grafit-700': '#33302B',
-                        // Легаси-алиасы (используются в шаблонах) → на фирменные цвета
-                        navy:   '#262421',
-                        accent: '#C1502E',
-                        'accent-dark': '#A23F22',
-                    },
-                    boxShadow: {
-                        card: '0 1px 2px rgba(38,36,33,.04), 0 8px 24px -12px rgba(38,36,33,.18)',
-                        lift: '0 10px 30px -12px rgba(38,36,33,.35)',
-                    },
-                    borderRadius: { '2xl': '1.1rem' },
-                },
-            },
-        };
-    </script>
+    <!-- Собранный Tailwind (см. tailwind.config.js). Раньше был Play CDN, который
+         компилировал стили в браузере: ~400 КБ JS на каждой загрузке и полное
+         отсутствие стилей офлайн — что противоречило PWA-требованию раздела 7.5 ТЗ.
+         Пересборка после правки шаблонов:
+         npx tailwindcss@3 -c tailwind.config.js -i static/css/tailwind.src.css -o static/css/app.css --minify -->
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
 
     <style>
         :root { --sand:#F3EDE4; --grafit:#262421; --terracotta:#C1502E; --amber:#D89A54; --steel:#6B6862; }
