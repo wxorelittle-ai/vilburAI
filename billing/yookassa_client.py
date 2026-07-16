@@ -79,12 +79,9 @@ def create_payment(brigada, tarif: str, summa, return_url: str):
 # --- Безопасность вебхука ------------------------------------------------------
 
 def klientskiy_ip(request) -> str:
-    """IP отправителя. За Nginx берём X-Real-IP — его проставляет наш прокси из
-    $remote_addr и перезаписывает клиентское значение, поэтому ему можно верить.
-    X-Forwarded-For не используем: слева там подставляется что угодно клиентом."""
-    return (request.META.get('HTTP_X_REAL_IP')
-            or request.META.get('REMOTE_ADDR')
-            or '')
+    """IP отправителя уведомления (общая логика — см. core.utils)."""
+    from core.utils import klientskiy_ip as _ip
+    return _ip(request)
 
 
 def ip_iz_seti_yookassa(ip: str) -> bool:

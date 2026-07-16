@@ -2,11 +2,19 @@
 Отправка СМС-кода для ПЭП (раздел 6 ТЗ).
 
 Без ключей СМС-шлюза в .env работает демо-режим: код не отправляется реально, а
-возвращается вызывающему коду для показа на экране (как демо-режим ЮKassa). С ключами
-(SMS_API_KEY) включается реальная отправка через шлюз (напр. SMS.ru / Wazzup).
+возвращается вызывающему коду для показа на экране (как демо-режим ЮKassa).
+С ключом (SMS_API_KEY) включается реальная отправка через шлюз SMS.ru.
+
+Безопасность: в БОЕВОМ режиме код не возвращается никогда, даже если шлюз упал.
+Иначе подписать документ смог бы любой, у кого есть ссылка: достаточно дождаться
+сбоя сети — и код появился бы прямо на странице, в обход владельца телефона.
 """
 
 from django.conf import settings
+
+DEMO = 'demo'          # шлюз не настроен — код показываем на экране
+OTPRAVLENO = 'sent'    # код ушёл по СМС
+OSHIBKA = 'error'      # боевой режим, но отправить не удалось — код НЕ раскрываем
 
 
 def is_configured() -> bool:
@@ -14,13 +22,14 @@ def is_configured() -> bool:
 
 
 def otpravit_kod(telefon: str, kod: str):
-    """Возвращает (demo: bool, kod_dlya_pokaza: str|None).
-    В демо-режиме код возвращается для показа; в боевом — отправляется по СМС."""
+    """Возвращает (status, kod_dlya_pokaza).
+    kod_dlya_pokaza не None только в демо-режиме."""
     if not is_configured():
-        return True, kod
+        return DEMO, kod
+
     try:
         import requests
-        requests.get(
+        r = requests.get(
             'https://sms.ru/sms/send',
             params={
                 'api_id': settings.SMS_API_KEY,
@@ -30,6 +39,12 @@ def otpravit_kod(telefon: str, kod: str):
             },
             timeout=15,
         )
-    except Exception:  # noqa: BLE001 — не роняем подписание из-за сбоя шлюза
-        return True, kod
-    return False, None
+        r.raise_for_status()
+        # Шлюз отвечает 200 даже на логическую ошибку — проверяем тело ответа,
+        # иначе отрапортуем «отправлено», когда ничего не ушло.
+        if (r.json() or {}).get('status') != 'OK':
+            return OSHIBKA, None
+    except Exception:  # noqa: BLE001 — сеть/формат ответа: считаем неотправленным
+        return OSHIBKA, None
+
+    return OTPRAVLENO, None

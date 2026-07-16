@@ -191,9 +191,10 @@ if not DEBUG:
 
 # objekty/ai_zaprosy — Модуль J (раздел 5 ТЗ): «Старт»/«Самозанятый» — недоступен,
 # «Бригадир» — до 3 объектов и 10 AI-запросов/мес, «PRO» — безлимит. None = безлимит.
+# pep — Модуль I (ПЭП): подпись заказчиком доступна с «Бригадира» и выше.
 TARIFF_LIMITS = {
-    'start': {'dokumenty': 1, 'raschety': 3, 'smety': 0, 'objekty': 0, 'ai_zaprosy': 0, 'cheki': 0, 'proverki': 0, 'label': 'Старт', 'price': 0},
-    'samozanyaty': {'dokumenty': 10, 'raschety': None, 'smety': 0, 'objekty': 0, 'ai_zaprosy': 0, 'cheki': 5, 'proverki': 0, 'label': 'Самозанятый', 'price': 490},
-    'brigadir': {'dokumenty': None, 'raschety': None, 'smety': 20, 'objekty': 3, 'ai_zaprosy': 10, 'cheki': None, 'proverki': 3, 'label': 'Бригадир', 'price': 990},
-    'pro': {'dokumenty': None, 'raschety': None, 'smety': None, 'objekty': None, 'ai_zaprosy': None, 'cheki': None, 'proverki': None, 'label': 'PRO', 'price': 1990},
+    'start': {'dokumenty': 1, 'raschety': 3, 'smety': 0, 'objekty': 0, 'ai_zaprosy': 0, 'cheki': 0, 'proverki': 0, 'pep': 0, 'label': 'Старт', 'price': 0},
+    'samozanyaty': {'dokumenty': 10, 'raschety': None, 'smety': 0, 'objekty': 0, 'ai_zaprosy': 0, 'cheki': 5, 'proverki': 0, 'pep': 0, 'label': 'Самозанятый', 'price': 490},
+    'brigadir': {'dokumenty': None, 'raschety': None, 'smety': 20, 'objekty': 3, 'ai_zaprosy': 10, 'cheki': None, 'proverki': 3, 'pep': None, 'label': 'Бригадир', 'price': 990},
+    'pro': {'dokumenty': None, 'raschety': None, 'smety': None, 'objekty': None, 'ai_zaprosy': None, 'cheki': None, 'proverki': None, 'pep': None, 'label': 'PRO', 'price': 1990},
 }

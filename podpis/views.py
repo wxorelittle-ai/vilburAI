@@ -2,19 +2,16 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 
+from billing import limits as tarif_limits
+from core.utils import klientskiy_ip
 from documents.models import Dokument
 from . import sms
 from .models import PodpisZakazchika
 
 
-def _ip(request):
-    fwd = request.META.get('HTTP_X_FORWARDED_FOR')
-    return fwd.split(',')[0].strip() if fwd else request.META.get('REMOTE_ADDR')
-
-
 def _pep_dostupna(brigada) -> bool:
-    """ПЭП — тарифы «Бригадир» и «PRO» (раздел 5 ТЗ)."""
-    return brigada.effective_tarif in ('brigadir', 'pro')
+    """ПЭП — тарифы «Бригадир» и «PRO» (раздел 5 ТЗ). Выводим из тарифной сетки."""
+    return tarif_limits.dostupen(brigada, 'pep')
 
 
 @login_required
@@ -57,17 +54,25 @@ def sign_page(request, token):
                 podpis.save(update_fields=['telefon'])
                 kod = PodpisZakazchika.sgenerirovat_kod()
                 podpis.zapisat_kod(kod)
-                demo, kod_dlya_pokaza = sms.otpravit_kod(telefon, kod)
-                kod_zaproshen = True
-                if demo:
-                    demo_kod = kod_dlya_pokaza  # показываем на экране (демо-режим)
-                messages.info(request, 'Код отправлен на указанный номер.' if not demo
-                              else 'Демо-режим: СМС-шлюз не настроен — код показан ниже.')
+                status, kod_dlya_pokaza = sms.otpravit_kod(telefon, kod)
+
+                if status == sms.DEMO:
+                    kod_zaproshen = True
+                    demo_kod = kod_dlya_pokaza  # показываем на экране только в демо
+                    messages.info(request, 'Демо-режим: СМС-шлюз не настроен — код показан ниже.')
+                elif status == sms.OTPRAVLENO:
+                    kod_zaproshen = True
+                    messages.info(request, 'Код отправлен на указанный номер.')
+                else:
+                    # Боевой режим, но шлюз не ответил. Код не раскрываем — иначе
+                    # подписать смог бы любой, у кого есть ссылка.
+                    kod_zaproshen = False
+                    messages.error(request, 'Не удалось отправить СМС. Попробуйте ещё раз через минуту.')
 
         elif action == 'confirm':
             kod = (request.POST.get('kod') or '').strip()
             if podpis.proverit_kod(kod):
-                podpis.podpisat(telefon=podpis.telefon, ip=_ip(request))
+                podpis.podpisat(telefon=podpis.telefon, ip=klientskiy_ip(request))
                 messages.success(request, 'Документ подписан. Спасибо!')
                 return redirect('podpis:sign', token=token)
             else:
