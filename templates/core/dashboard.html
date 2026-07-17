@@ -103,12 +103,14 @@
                             {% if not den.v_mesyatse %}bg-sand/40{% endif %}">
                             <div class="flex items-center justify-between mb-1">
                                 {% comment %}
-                                   text-steel/40 давал контраст 1.78 при норме 3:1 — числа
-                                   соседних месяцев были почти не читаемы. Приглушаем фоном
-                                   ячейки, а не прозрачностью текста.
+                                   Числа соседних месяцев приглушаем ФОНОМ ячейки (bg-sand),
+                                   а не прозрачностью текста: text-steel/40 давал контраст
+                                   1.78, /70 — только 2.99, а числу 12px жирным по WCAG нужно
+                                   4.5 (жирный считается крупным лишь с 18.66px). Сплошной
+                                   text-steel норму проходит.
                                 {% endcomment %}
                                 <span class="text-xs font-bold w-6 h-6 inline-flex items-center justify-center rounded-full
-                                    {% if den.segodnya %}bg-grafit text-white{% elif not den.v_mesyatse %}text-steel/70{% else %}text-steel{% endif %}">{{ den.den }}</span>
+                                    {% if den.segodnya %}bg-grafit text-white{% else %}text-steel{% endif %}">{{ den.den }}</span>
                                 {% if den.prosrocheno %}<span class="w-1.5 h-1.5 rounded-full bg-terracotta"></span>{% endif %}
                             </div>
                             {% for s in den.sobytiya|slice:":3" %}
