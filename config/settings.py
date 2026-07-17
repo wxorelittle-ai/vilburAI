@@ -123,6 +123,14 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Имена статики с хешем (app.<хеш>.css). Без этого nginx с `immutable; expires 30d`
+# и service worker (cache-first) держат старый CSS у всех, кто уже открывал сайт, —
+# правки вёрстки до них просто не доезжают. См. core/storage.py.
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'core.storage.TerpimoeManifestStorage'},
+}
+
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
