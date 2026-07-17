@@ -127,7 +127,11 @@
 </head>
 <body class="min-h-screen flex flex-col antialiased">
 
-    <nav class="bg-grafit text-white sticky top-0 z-40 shadow-lift">
+    {% comment %}
+       relative — чтобы выпадающая панель меню (absolute top-full) цеплялась за шапку,
+       а не за случайного предка выше.
+    {% endcomment %}
+    <nav class="bg-grafit text-white sticky top-0 z-40 shadow-lift relative">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
             <a href="{% url 'core:landing' %}" class="flex items-center gap-2.5 shrink-0">
                 <img src="{% static 'img/wilbur-horse-white.png' %}" alt="Вильбур" width="40" height="36" class="h-9 w-auto">
@@ -150,14 +154,19 @@
                 <a href="{% url 'objekty:list' %}" class="px-3 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Объекты</a>
                 <a href="{% url 'billing:plans' %}" class="px-3 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Тарифы</a>
             </div>
+            {% comment %}
+               Ниже lg «Профиль» и «Выйти» уезжают в выдвижное меню: иначе логотип (145px)
+               + «Установить» + тема + бургер + выход не влезают в 375px и шапка рвётся.
+            {% endcomment %}
             <div class="flex items-center gap-2">
                 <button type="button" data-install class="hidden text-sm px-3 py-2 rounded-lg bg-amber/20 text-amber hover:bg-amber/30 transition font-semibold">Установить</button>
                 <button type="button" data-theme-toggle class="w-11 h-11 rounded-lg bg-white/10 hover:bg-white/20 transition text-base leading-none" aria-label="Тёмная тема">☾</button>
-                <a href="{% url 'core:profile' %}" class="hidden sm:inline text-sm text-white/70 hover:text-amber transition px-2">Профиль</a>
-                <form method="post" action="{% url 'core:logout' %}" class="inline">
+                <a href="{% url 'core:profile' %}" class="hidden lg:inline text-sm text-white/70 hover:text-amber transition px-2">Профиль</a>
+                <form method="post" action="{% url 'core:logout' %}" class="hidden lg:inline">
                     {% csrf_token %}
                     <button type="submit" class="text-sm px-4 py-3 rounded-lg bg-white/10 hover:bg-white/20 transition">Выйти</button>
                 </form>
+                {% include "_menyu_mobilnoe.html" %}
             </div>
             {% else %}
             <div class="flex items-center gap-2 sm:gap-3">

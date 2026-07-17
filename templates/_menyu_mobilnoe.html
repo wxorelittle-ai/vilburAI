@@ -1,0 +1,45 @@
+{% comment %}
+Выдвижное меню для телефона и планшета (ниже lg, где полное меню в шапке не помещается).
+
+Зачем: ниже 1024px в шапке оставались только логотип и кнопки. С дашборда навигация
+была (боковое меню), а с остальных страниц уйти можно было лишь через логотип.
+
+Почему <details>, а не JS: меню работает без скриптов и до их загрузки. Разделов 15 —
+по Material это выдвижное меню, нижняя панель рассчитана на 3-5.
+https://m3.material.io/components/navigation-drawer/guidelines
+
+Список разделов — из core.context_processors.RAZDELY, чтобы не разъезжался с боковым меню.
+
+ВНИМАНИЕ: только {% comment %} — многострочный {# ... #} Django печатает как текст.
+{% endcomment %}
+<details class="lg:hidden" data-menyu>
+    <summary class="u-tap list-none w-11 h-11 inline-flex items-center justify-center rounded-lg
+                    bg-white/10 hover:bg-white/20 transition cursor-pointer text-xl leading-none"
+             aria-label="Меню разделов">☰</summary>
+
+    <div class="absolute left-0 right-0 top-full bg-grafit border-t border-white/10 shadow-lift
+                max-h-[70vh] overflow-y-auto">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 grid sm:grid-cols-2 gap-1">
+            {% for url, nazvanie, gruppa in menyu_razdely %}
+            <a href="{{ url }}" class="px-4 py-3 min-h-[48px] flex items-center rounded-lg text-sm font-medium transition
+                {% if request.path == url %}bg-white/15 text-white{% else %}text-white/75 hover:bg-white/10 hover:text-white{% endif %}"
+               {% if request.path == url %}aria-current="page"{% endif %}>
+                {{ nazvanie }}
+            </a>
+            {% endfor %}
+
+            {% comment %}
+               «Выйти» — POST-формой, а не ссылкой: выход по GET открывает CSRF-дыру
+               (чужая страница может «разлогинить» картинкой). Ниже lg это единственный
+               выход — из шапки он там убран.
+            {% endcomment %}
+            <form method="post" action="{% url 'core:logout' %}" class="sm:col-span-2 mt-1 pt-2 border-t border-white/10">
+                {% csrf_token %}
+                <button type="submit" class="w-full px-4 py-3 min-h-[48px] rounded-lg text-sm font-medium
+                                             text-white/75 hover:bg-white/10 hover:text-white transition text-left">
+                    Выйти
+                </button>
+            </form>
+        </div>
+    </div>
+</details>

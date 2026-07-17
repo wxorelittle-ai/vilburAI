@@ -345,6 +345,50 @@ class KalendarTests(TestCase):
                 self.assertEqual(r.status_code, 200)
 
 
+@override_settings(AUTO_LOGIN=True, AUTO_LOGIN_USERNAME='vladelec')
+class MenyuTests(TestCase):
+    """Навигация на телефоне. Ниже lg полное меню в шапке не помещается, и до этого
+    уйти с любой страницы кроме дашборда было некуда — только через логотип."""
+
+    def test_menyu_est_na_kazhdoy_stranice(self):
+        for url in ('/dashboard/', '/documents/', '/smety/', '/objekty/', '/nalogi/', '/profile/'):
+            with self.subTest(url=url):
+                html = self.client.get(url).content.decode()
+                self.assertIn('data-menyu', html, f'на {url} нет выдвижного меню — с неё не уйти')
+
+    def test_v_menyu_vse_razdely(self):
+        from core.context_processors import RAZDELY
+        html = self.client.get('/documents/').content.decode()
+        for _, nazvanie, _ in RAZDELY:
+            self.assertIn(nazvanie, html, f'раздела «{nazvanie}» нет в меню')
+
+    def test_est_vyhod(self):
+        """Ниже lg «Выйти» убран из шапки, значит он обязан быть в меню."""
+        html = self.client.get('/documents/').content.decode()
+        self.assertIn('/logout/', html)
+        self.assertIn('Выйти', html)
+
+    def test_spisok_razdelov_ne_bityy(self):
+        """Все имена маршрутов в RAZDELY должны разрешаться."""
+        from django.urls import reverse, NoReverseMatch
+        from core.context_processors import RAZDELY
+        for imya, nazvanie, _ in RAZDELY:
+            with self.subTest(razdel=nazvanie):
+                try:
+                    reverse(imya)
+                except NoReverseMatch:
+                    self.fail(f'битая ссылка в меню: {imya} («{nazvanie}»)')
+
+    def test_anonimu_menyu_ne_dayotsya(self):
+        """Публичная смета не должна звать заказчика в кабинет владельца."""
+        from core.context_processors import menyu
+        from django.contrib.auth.models import AnonymousUser
+        from django.test import RequestFactory
+        r = RequestFactory().get('/s/abc/')
+        r.user = AnonymousUser()
+        self.assertEqual(menyu(r), {})
+
+
 class BrigadaTests(TestCase):
     def test_tarif_label(self):
         u = get_user_model().objects.create_user('bt', password='x')
