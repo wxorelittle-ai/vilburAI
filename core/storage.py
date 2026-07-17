@@ -12,10 +12,19 @@
 и скачал новое. А `immutable` на 30 дней становится честным: конкретный
 app.<хеш>.css и правда неизменен.
 
-manifest_strict=False: без него любой {% static %} на файл, которого нет в манифесте,
-роняет рендер ошибкой. Манифест появляется только после collectstatic, поэтому в
-тестах и при локальной разработке строгий режим ломал бы страницы на ровном месте.
-Со strict=False адрес просто остаётся нехешированным.
+Почему «терпимое». Манифест появляется только после collectstatic, а страницы должны
+отрисовываться и до него — в тестах и при локальной разработке. Поэтому два послабления:
+
+* manifest_strict=False — нет записи в манифесте, отдаём нехешированный адрес, а не
+  роняем рендер;
+* hashed_name с перехватом — при strict=False Django пытается посчитать хеш сам, читая
+  файл из STATIC_ROOT, и падает ValueError, если файла там ещё нет. На этом обожглись:
+  добавили свои шрифты — и ВСЕ страницы легли с 500 до первого collectstatic, включая
+  тесты на чистой копии репозитория. Отсутствующий файл не повод ронять весь сайт:
+  отдаём обычный адрес.
+
+Обратная сторона: опечатка в {% static %} тихо превратится в 404 картинки вместо
+громкой ошибки. Это меньшее зло, чем белый экран на всём сайте.
 """
 
 from django.contrib.staticfiles.storage import ManifestStaticFilesStorage
@@ -23,3 +32,9 @@ from django.contrib.staticfiles.storage import ManifestStaticFilesStorage
 
 class TerpimoeManifestStorage(ManifestStaticFilesStorage):
     manifest_strict = False
+
+    def hashed_name(self, name, content=None, filename=None):
+        try:
+            return super().hashed_name(name, content, filename)
+        except ValueError:
+            return name

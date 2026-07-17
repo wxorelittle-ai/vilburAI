@@ -389,6 +389,44 @@ class MenyuTests(TestCase):
         self.assertEqual(menyu(r), {})
 
 
+@override_settings(AUTO_LOGIN=True, AUTO_LOGIN_USERNAME='vladelec')
+class ShriftySvoiTests(TestCase):
+    """Шрифты обязаны отдаваться со своего сервера.
+
+    Google Fonts CDN получает IP каждого посетителя (в ЕС за это штрафовали, у нас —
+    152-ФЗ). Плюс внешняя зависимость: чужой сервер в критическом пути отрисовки.
+    """
+
+    def test_net_obrashcheniy_k_google_fonts(self):
+        for url in ('/dashboard/', '/documents/', '/profile/'):
+            with self.subTest(url=url):
+                html = self.client.get(url).content.decode()
+                self.assertNotIn('fonts.googleapis.com', html,
+                                 'шрифты снова тянутся с Google CDN — он видит IP посетителя')
+                self.assertNotIn('fonts.gstatic.com', html)
+
+    def test_shrifty_lezhat_ryadom(self):
+        from pathlib import Path
+        from django.conf import settings
+        fonts = Path(settings.BASE_DIR, 'static', 'fonts')
+        est = {f.name for f in fonts.glob('*.woff2')}
+        for nuzhen in ('inter-cyrillic.woff2', 'inter-latin.woff2',
+                       'manrope-cyrillic.woff2', 'manrope-latin.woff2'):
+            self.assertIn(nuzhen, est, f'нет файла шрифта {nuzhen} — интерфейс сядет на запасной')
+
+    def test_sw_kladyot_shrifty_v_offlain_kesh(self):
+        """Иначе офлайн интерфейс остаётся без гарнитур.
+
+        Имена ищем по префиксу: после collectstatic они хешированы
+        (fonts.cc81a10e3d9e.css), а без него — обычные.
+        """
+        sw = self.client.get('/sw.js').content.decode()
+        self.assertIn('/static/fonts/inter-cyrillic', sw)
+        self.assertIn('/static/fonts/manrope-cyrillic', sw)
+        self.assertIn('/static/css/fonts.', sw)
+        self.assertNotIn('fonts.gstatic.com', sw)
+
+
 class BrigadaTests(TestCase):
     def test_tarif_label(self):
         u = get_user_model().objects.create_user('bt', password='x')

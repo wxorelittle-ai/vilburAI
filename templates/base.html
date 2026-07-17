@@ -16,9 +16,19 @@
     <!-- Ранняя инициализация темы — до отрисовки, чтобы не мигало -->
     <script>(function(){try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    {% comment %}
+       Шрифты свои, не с Google CDN: тот отдаёт IP каждого посетителя в США, а мы
+       обрабатываем персданные (152-ФЗ) — в ЕС за Google Fonts уже штрафовали. Заодно
+       минус внешняя зависимость (шапка сайта больше не ждёт чужой сервер) и минус
+       два DNS+TLS-рукопожатия.
+
+       Вариативные: 4 файла (104 КБ) вместо 46 статических объявлений, только кириллица
+       и латиница. preload — на два файла, которые нужны сразу для текста интерфейса.
+       Пересобрать: deploy/shrifty.ps1
+    {% endcomment %}
+    <link rel="preload" href="{% static 'fonts/inter-cyrillic.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{% static 'fonts/inter-latin.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
 
     <!-- Собранный Tailwind (см. tailwind.config.js). Раньше был Play CDN, который
          компилировал стили в браузере: ~400 КБ JS на каждой загрузке и полное

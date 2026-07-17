@@ -1,5 +1,6 @@
 {% load static %}// Service Worker Вильбур AI (раздел 7.5 ТЗ)
-const VERSION = 'wilbur-v2';
+// v3: шрифты стали своими — старый кэш со ссылками на внешний CDN больше не нужен.
+const VERSION = 'wilbur-v3';
 const STATIC_CACHE = VERSION + '-static';
 const RUNTIME_CACHE = VERSION + '-runtime';
 const OFFLINE_URL = '/offline/';
@@ -9,6 +10,13 @@ const OFFLINE_URL = '/offline/';
 const PRECACHE = [
   OFFLINE_URL,
   '{% static "css/app.css" %}',
+  '{% static "css/fonts.css" %}',
+  // Шрифты кладём в кэш сразу: раньше они тянулись с внешнего CDN, и офлайн
+  // интерфейс оставался без гарнитур до первого удачного захода в сеть.
+  '{% static "fonts/inter-cyrillic.woff2" %}',
+  '{% static "fonts/inter-latin.woff2" %}',
+  '{% static "fonts/manrope-cyrillic.woff2" %}',
+  '{% static "fonts/manrope-latin.woff2" %}',
   '{% static "js/app.js" %}',
   '{% static "js/offline-calc.js" %}',
   '{% static "icons/icon-192.png" %}',
@@ -49,12 +57,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Статика/CDN/шрифты: cache-first с дозаписью
-  if (
-    url.origin === location.origin ||
-    url.host.includes('fonts.googleapis.com') ||
-    url.host.includes('fonts.gstatic.com')
-  ) {
+  // Статика: cache-first с дозаписью. Внешних шрифтов больше нет — всё со своего origin.
+  // Имена статики хешированы (app.<хеш>.css), поэтому cache-first безопасен: новая
+  // версия файла = новый адрес = промах кэша и свежая загрузка.
+  if (url.origin === location.origin) {
     event.respondWith(
       caches.match(req).then(
         (cached) =>
