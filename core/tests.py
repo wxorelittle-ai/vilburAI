@@ -124,9 +124,9 @@ class KalendarTests(TestCase):
                     return d['sobytiya']
         return None
 
-    def _etap(self, okonchanie, fact=0, plan=10):
+    def _etap(self, okonchanie, fact=0, plan=10, nazvanie='Э'):
         from decimal import Decimal
-        return self.Etap.objects.create(objekt=self.ob, nazvanie='Э', plan_objem=Decimal(plan),
+        return self.Etap.objects.create(objekt=self.ob, nazvanie=nazvanie, plan_objem=Decimal(plan),
                                         fact_objem=Decimal(fact), plan_data_nachala=self.T,
                                         plan_data_okonchania=okonchanie)
 
@@ -257,6 +257,24 @@ class KalendarTests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, 'Заказ материала')      # легенда
         self.assertContains(r, 'Зарплата рабочим')
+
+    def test_vse_zadachi_dnya_dostizhimy(self):
+        """В ячейке дня видно 3 задачи, остальные — под «ещё N», но в HTML они есть.
+
+        Все зарплаты месяца падают на одно число, поэтому переполненный день — норма,
+        а не край. Раньше «ещё 13» было мёртвой надписью, и 13 задач из 16 достать
+        было нельзя.
+        """
+        for i in range(6):
+            self._etap(self.T, nazvanie=f'Стяжка{i}')      # 6 задач на один день
+        self.client.force_login(self.b.user)
+        html = self.client.get(reverse('core:dashboard')).content.decode()
+        self.assertIn('ещё 3', html)
+        self.assertIn('<details>', html)
+        # все шесть — в разметке, а не только первые три
+        for i in range(6):
+            self.assertIn(f'Сдать: Стяжка{i}', html,
+                          f'задача «Стяжка{i}» не попала в HTML — её не достать')
 
     def test_listanie_mesyacev(self):
         self.client.force_login(self.b.user)

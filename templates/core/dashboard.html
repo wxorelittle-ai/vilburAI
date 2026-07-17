@@ -107,17 +107,19 @@
                                 {% if den.prosrocheno %}<span class="w-1.5 h-1.5 rounded-full bg-terracotta"></span>{% endif %}
                             </div>
                             {% for s in den.sobytiya|slice:":3" %}
-                            <a href="{{ s.url }}" title="{{ s.zagolovok }} — {{ s.podzagolovok }}"
-                               class="block mb-0.5 px-1.5 py-0.5 rounded text-[11px] leading-tight truncate border-l-2 transition hover:opacity-80
-                                {% if s.cvet == 'red' %}border-l-terracotta bg-[#F7E7E1] text-accent-dark font-semibold
-                                {% elif s.cvet == 'amber' %}border-l-amber bg-[#FBF3E5] text-[#7A5A2E]
-                                {% elif s.cvet == 'blue' %}border-l-[#5B7DA6] bg-[#E8EEF5] text-[#41618A]
-                                {% elif s.cvet == 'green' %}border-l-[#5E7F4F] bg-[#EAF1E6] text-[#3B5A2E]
-                                {% else %}border-l-steel bg-sand text-steel{% endif %}
-                                {% if s.vypolneno %}line-through opacity-60{% endif %}">{{ s.zagolovok }}</a>
+                                {% include "core/_kalendar_sobytie.html" %}
                             {% endfor %}
                             {% if den.sobytiya|length > 3 %}
-                            <span class="block text-[10px] text-steel px-1.5">ещё {{ den.sobytiya|length|add:"-3" }}</span>
+                            {# «ещё N» раскрывается: все зарплаты месяца падают на одно число,
+                               и без этого 13 задач из 16 были бы недостижимы. #}
+                            <details>
+                                <summary class="cursor-pointer text-[10px] font-semibold text-steel hover:text-terracotta px-1.5 py-0.5">
+                                    ещё {{ den.sobytiya|length|add:"-3" }}
+                                </summary>
+                                {% for s in den.sobytiya|slice:"3:" %}
+                                    {% include "core/_kalendar_sobytie.html" %}
+                                {% endfor %}
+                            </details>
                             {% endif %}
                         </div>
                         {% endfor %}

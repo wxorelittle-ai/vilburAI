@@ -1,0 +1,10 @@
+{# Плашка одной задачи в дне календаря. Цвет — по виду задачи, но у просроченной
+   всегда терракота. Выполненное зачёркнуто и приглушено. #}
+<a href="{{ s.url }}" title="{{ s.zagolovok }} — {{ s.podzagolovok }}"
+   class="block mb-0.5 px-1.5 py-0.5 rounded text-[11px] leading-tight truncate border-l-2 transition hover:opacity-80
+    {% if s.cvet == 'red' %}border-l-terracotta bg-[#F7E7E1] text-accent-dark font-semibold
+    {% elif s.cvet == 'amber' %}border-l-amber bg-[#FBF3E5] text-[#7A5A2E]
+    {% elif s.cvet == 'blue' %}border-l-[#5B7DA6] bg-[#E8EEF5] text-[#41618A]
+    {% elif s.cvet == 'green' %}border-l-[#5E7F4F] bg-[#EAF1E6] text-[#3B5A2E]
+    {% else %}border-l-steel bg-sand text-steel{% endif %}
+    {% if s.vypolneno %}line-through opacity-60{% endif %}">{{ s.zagolovok }}</a>
