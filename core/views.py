@@ -49,8 +49,19 @@ def dashboard(request):
     from . import dashboard as dash
 
     brigada = request.user.brigada
-    # объекты тянем один раз с prefetch — их читают и лента дел, и финансы
+    # объекты тянем один раз с prefetch — их читают и лента дел, и финансы, и календарь
     objekty = list(dash._objekty_brigady(brigada)) if objekty_limits.objekty_dostupny(brigada) else []
+
+    # календарь листается: ?god=2026&mesyats=8. Мусор в параметрах — просто текущий месяц.
+    try:
+        god = int(request.GET.get('god', 0)) or None
+        mesyats = int(request.GET.get('mesyats', 0)) or None
+        if mesyats is not None and not 1 <= mesyats <= 12:
+            god = mesyats = None
+        if god is not None and not 2000 <= god <= 2100:
+            god = mesyats = None
+    except (TypeError, ValueError):
+        god = mesyats = None
 
     context = {
         'brigada': brigada,
@@ -63,6 +74,8 @@ def dashboard(request):
         'objekty': objekty[:6],
         'dela': dash.blizhayshie_dela(brigada, objekty=objekty)[:12] if objekty else [],
         'finansy': dash.finansy(brigada, objekty=objekty) if objekty else None,
+        'kalendar': dash.kalendar_mesyaca(brigada, god, mesyats, objekty=objekty) if objekty else None,
+        'dni_nedeli': dash.DNI_NEDELI,
     }
     return render(request, 'core/dashboard.html', context)
 

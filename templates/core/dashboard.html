@@ -48,6 +48,86 @@
             {% endif %}
         </div>
 
+        {# ---------- Календарь месяца ---------- #}
+        {% if kalendar %}
+        <section class="mb-8">
+            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <div class="flex items-baseline gap-3">
+                    <h2 class="font-display text-lg font-bold text-grafit">{{ kalendar.nazvanie }}</h2>
+                    {% if kalendar.prosrocheno %}
+                        <span class="text-xs font-bold text-accent-dark bg-[#F7E7E1] border border-[#E7C3B6] rounded-full px-2 py-0.5">
+                            просрочено: {{ kalendar.prosrocheno }}
+                        </span>
+                    {% elif kalendar.vsego %}
+                        <span class="text-xs font-semibold text-steel">задач: {{ kalendar.vsego }}</span>
+                    {% endif %}
+                </div>
+                <div class="flex items-center gap-1">
+                    <a href="?god={{ kalendar.pred.god }}&mesyats={{ kalendar.pred.mesyats }}"
+                       class="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-sand-deep bg-white text-steel hover:text-terracotta hover:border-terracotta transition"
+                       aria-label="Предыдущий месяц">←</a>
+                    {% if not kalendar.tekushchiy %}
+                    <a href="{% url 'core:dashboard' %}" class="text-xs font-semibold text-steel hover:text-terracotta px-2">Сегодня</a>
+                    {% endif %}
+                    <a href="?god={{ kalendar.sled.god }}&mesyats={{ kalendar.sled.mesyats }}"
+                       class="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-sand-deep bg-white text-steel hover:text-terracotta hover:border-terracotta transition"
+                       aria-label="Следующий месяц">→</a>
+                </div>
+            </div>
+
+            {# легенда: что означает каждый цвет #}
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 mb-3 text-xs text-steel">
+                {% for l in kalendar.legenda %}
+                <span class="inline-flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full
+                        {% if l.cvet == 'amber' %}bg-amber{% elif l.cvet == 'blue' %}bg-[#5B7DA6]{% elif l.cvet == 'green' %}bg-[#5E7F4F]{% else %}bg-steel{% endif %}"></span>
+                    {{ l.nazvanie }}
+                </span>
+                {% endfor %}
+                <span class="inline-flex items-center gap-1.5 font-semibold text-accent-dark">
+                    <span class="w-2.5 h-2.5 rounded-full bg-terracotta"></span> Просрочено
+                </span>
+            </div>
+
+            <div class="rounded-2xl border border-sand-deep bg-white shadow-card overflow-hidden overflow-x-auto">
+                <div class="min-w-[560px]">
+                    <div class="grid grid-cols-7 bg-sand text-steel text-xs font-semibold">
+                        {% for d in dni_nedeli %}
+                        <div class="px-2 py-2 text-center">{{ d }}</div>
+                        {% endfor %}
+                    </div>
+                    {% for nedelya in kalendar.nedeli %}
+                    <div class="grid grid-cols-7 border-t border-sand-deep">
+                        {% for den in nedelya %}
+                        <div class="min-h-[92px] p-1.5 border-r border-sand-deep last:border-r-0
+                            {% if not den.v_mesyatse %}bg-sand/40{% endif %}">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-bold w-6 h-6 inline-flex items-center justify-center rounded-full
+                                    {% if den.segodnya %}bg-grafit text-white{% elif not den.v_mesyatse %}text-steel/40{% else %}text-steel{% endif %}">{{ den.den }}</span>
+                                {% if den.prosrocheno %}<span class="w-1.5 h-1.5 rounded-full bg-terracotta"></span>{% endif %}
+                            </div>
+                            {% for s in den.sobytiya|slice:":3" %}
+                            <a href="{{ s.url }}" title="{{ s.zagolovok }} — {{ s.podzagolovok }}"
+                               class="block mb-0.5 px-1.5 py-0.5 rounded text-[11px] leading-tight truncate border-l-2 transition hover:opacity-80
+                                {% if s.cvet == 'red' %}border-l-terracotta bg-[#F7E7E1] text-accent-dark font-semibold
+                                {% elif s.cvet == 'amber' %}border-l-amber bg-[#FBF3E5] text-[#7A5A2E]
+                                {% elif s.cvet == 'blue' %}border-l-[#5B7DA6] bg-[#E8EEF5] text-[#41618A]
+                                {% elif s.cvet == 'green' %}border-l-[#5E7F4F] bg-[#EAF1E6] text-[#3B5A2E]
+                                {% else %}border-l-steel bg-sand text-steel{% endif %}
+                                {% if s.vypolneno %}line-through opacity-60{% endif %}">{{ s.zagolovok }}</a>
+                            {% endfor %}
+                            {% if den.sobytiya|length > 3 %}
+                            <span class="block text-[10px] text-steel px-1.5">ещё {{ den.sobytiya|length|add:"-3" }}</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
         {# ---------- Что горит: лента ближайших дел ---------- #}
         {% if dela %}
         <section class="mb-8">

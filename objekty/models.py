@@ -20,6 +20,11 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 
 
+# Если у оплаты монтажнику не указана дата выплаты — считаем её 10-м числом
+# следующего месяца (см. OplataMontajnika.data_vyplaty_plan).
+DEN_VYPLATY_PO_UMOLCHANIYU = 10
+
+
 def money(value) -> Decimal:
     return Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
@@ -351,6 +356,8 @@ class OplataMontajnika(models.Model):
     fact_objem_mesyats = models.DecimalField('Фактический объём за месяц', max_digits=10, decimal_places=2, default=0)
     oplacheno_sverh_grafika = models.BooleanField('Оплата сверх графика подтверждена', default=False)
     summa_oplacheno = models.DecimalField('Уже оплачено, ₽', max_digits=10, decimal_places=2, default=0)
+    data_vyplaty = models.DateField('Дата выплаты', null=True, blank=True,
+                                    help_text='Если не указана — 10-е число следующего месяца')
 
     class Meta:
         verbose_name = 'Оплата монтажнику'
@@ -378,6 +385,23 @@ class OplataMontajnika(models.Model):
     @property
     def ostatok_k_vyplate(self) -> Decimal:
         return money(self.summa_k_oplate - self.summa_oplacheno)
+
+    @property
+    def vyplacheno_polnostyu(self) -> bool:
+        return self.ostatok_k_vyplate <= 0
+
+    @cached_property
+    def data_vyplaty_plan(self):
+        """Дата, на которую зарплата попадает в календарь.
+
+        Поле data_vyplaty необязательное: в записях за прошлые месяцы его нет, да и
+        заполнять его каждый раз бригадиру ни к чему. Если не указано — берём принятый
+        по умолчанию расчёт: 10-е число месяца, следующего за отчётным.
+        """
+        if self.data_vyplaty:
+            return self.data_vyplaty
+        sleduyushchiy = (self.mesyats.replace(day=1) + timedelta(days=32)).replace(day=1)
+        return sleduyushchiy.replace(day=DEN_VYPLATY_PO_UMOLCHANIYU)
 
 
 class RashodMesyachny(models.Model):

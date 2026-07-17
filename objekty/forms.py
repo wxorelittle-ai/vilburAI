@@ -51,8 +51,10 @@ class MaterialForm(forms.ModelForm):
 class OplataMontajnikaForm(forms.ModelForm):
     class Meta:
         model = OplataMontajnika
-        fields = ['montajnik_fio', 'rascenka', 'mesyats', 'plan_objem_mesyats', 'fact_objem_mesyats', 'summa_oplacheno', 'oplacheno_sverh_grafika']
-        widgets = {'mesyats': forms.DateInput(attrs={'type': 'date'})}
+        fields = ['montajnik_fio', 'rascenka', 'mesyats', 'data_vyplaty', 'plan_objem_mesyats',
+                  'fact_objem_mesyats', 'summa_oplacheno', 'oplacheno_sverh_grafika']
+        widgets = {'mesyats': forms.DateInput(attrs={'type': 'date'}),
+                   'data_vyplaty': forms.DateInput(attrs={'type': 'date'})}
 
 
 class RashodMesyachnyForm(forms.ModelForm):

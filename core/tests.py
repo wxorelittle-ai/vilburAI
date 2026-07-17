@@ -92,6 +92,189 @@ class ShablonyNeTekutTests(TestCase):
                                      f'на {url} в HTML протёк шаблонный тег {marker}')
 
 
+class KalendarTests(TestCase):
+    """Календарь месяца на дашборде: 4 вида задач по дням, просрочка — красным.
+
+    Главное правило заказчика: задача горит красным, только если не выполнена И
+    просрочена на день и более. Срок «сегодня» — ещё не просрочка.
+    """
+
+    def setUp(self):
+        from datetime import timedelta
+        from decimal import Decimal
+        from objekty.models import Objekt, EtapGrafika, Material, DvizhenieDeneg, OplataMontajnika
+        self.T = timezone.localdate()
+        u = get_user_model().objects.create_user('kal', password='x')
+        self.b = Brigada.objects.create(user=u, nazvanie='Т', telefon='+79990000000', tarif='pro',
+                                        data_okonchaniya_tarifa=self.T + timedelta(days=30))
+        self.ob = Objekt.objects.create(brigada=self.b, nazvanie='Объект', data_nachala=self.T,
+                                        data_okonchania_plan=self.T + timedelta(days=60),
+                                        summa_dogovora=Decimal('500000'))
+        self.Material, self.Etap = Material, EtapGrafika
+        self.Dengi, self.Oplata = DvizhenieDeneg, OplataMontajnika
+
+    def _kalendar(self, god=None, mesyats=None):
+        from core.dashboard import kalendar_mesyaca
+        return kalendar_mesyaca(self.b, god, mesyats)
+
+    def _sobytiya(self, kal, data):
+        for n in kal['nedeli']:
+            for d in n:
+                if d['data'] == data:
+                    return d['sobytiya']
+        return None
+
+    def _etap(self, okonchanie, fact=0, plan=10):
+        from decimal import Decimal
+        return self.Etap.objects.create(objekt=self.ob, nazvanie='Э', plan_objem=Decimal(plan),
+                                        fact_objem=Decimal(fact), plan_data_nachala=self.T,
+                                        plan_data_okonchania=okonchanie)
+
+    def test_setka_mesyaca_po_7_dney(self):
+        kal = self._kalendar()
+        self.assertTrue(all(len(n) == 7 for n in kal['nedeli']))
+        # дни соседних месяцев помечены и не считаются «в месяце»
+        vse = [d for n in kal['nedeli'] for d in n]
+        self.assertTrue(any(not d['v_mesyatse'] for d in vse) or len(vse) == 28)
+        self.assertTrue(any(d['segodnya'] for d in vse))
+
+    def test_srok_segodnya_ne_prosrochen(self):
+        """Граница правила: срок сегодня — ещё не горит."""
+        self._etap(self.T)
+        s = self._sobytiya(self._kalendar(), self.T)
+        self.assertEqual(len(s), 1)
+        self.assertFalse(s[0]['prosrocheno'])
+        self.assertEqual(s[0]['cvet'], 'steel')
+
+    def test_prosrochka_na_odin_den_gorit(self):
+        """Срок вчера и не выполнено — красное."""
+        from datetime import timedelta
+        vchera = self.T - timedelta(days=1)
+        self._etap(vchera)
+        s = self._sobytiya(self._kalendar(vchera.year, vchera.month), vchera)
+        self.assertTrue(s[0]['prosrocheno'])
+        self.assertEqual(s[0]['cvet'], 'red')
+
+    def test_vypolnennoe_ne_gorit_dazhe_v_proshlom(self):
+        """Этап сдан на 100% — прошедшая дата не делает его красным."""
+        from datetime import timedelta
+        vchera = self.T - timedelta(days=1)
+        self._etap(vchera, fact=10, plan=10)          # 100%
+        s = self._sobytiya(self._kalendar(vchera.year, vchera.month), vchera)
+        self.assertFalse(s[0]['prosrocheno'])
+        self.assertTrue(s[0]['vypolneno'])
+
+    def test_zakazanny_material_ne_gorit(self):
+        from datetime import timedelta
+        e = self._etap(self.T + timedelta(days=25))
+        m = self.Material.objects.create(objekt=self.ob, etap=e, nazvanie='Плитка',
+                                         srok_proizvodstva_dney=10, srok_dostavki_dney=5, bufer_dney=4,
+                                         status=self.Material.STATUS_NE_ZAKAZAN)
+        kraynyaya = m.data_zakaza_kraynyaya
+        s = self._sobytiya(self._kalendar(kraynyaya.year, kraynyaya.month), kraynyaya)
+        self.assertEqual(s[0]['tip'], 'material')
+        # заказали — задача закрыта
+        m.status = self.Material.STATUS_ZAKAZAN
+        m.save(update_fields=['status'])
+        s = self._sobytiya(self._kalendar(kraynyaya.year, kraynyaya.month), kraynyaya)
+        self.assertTrue(s[0]['vypolneno'])
+        self.assertFalse(s[0]['prosrocheno'])
+
+    def test_poluchennye_dengi_ne_goryat(self):
+        from datetime import timedelta
+        from decimal import Decimal
+        vchera = self.T - timedelta(days=1)
+        d = self.Dengi.objects.create(objekt=self.ob, osnovanie='Аванс', summa_nachislenie=Decimal('50000'),
+                                      data_plan=vchera, status=self.Dengi.STATUS_OZHIDAETSYA)
+        s = self._sobytiya(self._kalendar(vchera.year, vchera.month), vchera)
+        self.assertEqual(s[0]['tip'], 'dengi')
+        self.assertTrue(s[0]['prosrocheno'])
+        d.status = self.Dengi.STATUS_POLUCHENO
+        d.save(update_fields=['status'])
+        s = self._sobytiya(self._kalendar(vchera.year, vchera.month), vchera)
+        self.assertFalse(s[0]['prosrocheno'])
+
+    def test_zarplata_po_umolchaniyu_10_chislo_sleduyushchego(self):
+        from datetime import date
+        from decimal import Decimal
+        self.Oplata.objects.create(objekt=self.ob, montajnik_fio='Петров', rascenka=Decimal('300'),
+                                   mesyats=date(2026, 7, 1), plan_objem_mesyats=Decimal('100'),
+                                   fact_objem_mesyats=Decimal('100'))
+        s = self._sobytiya(self._kalendar(2026, 8), date(2026, 8, 10))
+        self.assertEqual(len(s), 1)
+        self.assertEqual(s[0]['tip'], 'zarplata')
+        self.assertEqual(s[0]['cvet'], 'green')
+
+    def test_zarplata_s_yavnoy_datoy_perekryvaet_umolchanie(self):
+        from datetime import date
+        from decimal import Decimal
+        self.Oplata.objects.create(objekt=self.ob, montajnik_fio='Петров', rascenka=Decimal('300'),
+                                   mesyats=date(2026, 7, 1), plan_objem_mesyats=Decimal('100'),
+                                   fact_objem_mesyats=Decimal('100'), data_vyplaty=date(2026, 8, 5))
+        kal = self._kalendar(2026, 8)
+        self.assertEqual(self._sobytiya(kal, date(2026, 8, 10)), [],
+                         'зарплата осталась на дате по умолчанию, хотя дата выплаты задана явно')
+        s = self._sobytiya(kal, date(2026, 8, 5))
+        self.assertEqual(s[0]['tip'], 'zarplata')
+
+    def test_vyplachennaya_zarplata_ne_gorit(self):
+        from datetime import date
+        from decimal import Decimal
+        self.Oplata.objects.create(objekt=self.ob, montajnik_fio='Петров', rascenka=Decimal('300'),
+                                   mesyats=date(2020, 1, 1), plan_objem_mesyats=Decimal('100'),
+                                   fact_objem_mesyats=Decimal('100'), summa_oplacheno=Decimal('30000'))
+        s = self._sobytiya(self._kalendar(2020, 2), date(2020, 2, 10))
+        self.assertTrue(s[0]['vypolneno'])
+        self.assertFalse(s[0]['prosrocheno'])       # выплачено — не горит, хоть и 2020 год
+
+    def test_chuzhie_zadachi_ne_popadayut(self):
+        from datetime import timedelta
+        from decimal import Decimal
+        from objekty.models import Objekt
+        u2 = get_user_model().objects.create_user('kal2', password='x')
+        b2 = Brigada.objects.create(user=u2, nazvanie='Чужая', telefon='+79990000001', tarif='pro',
+                                    data_okonchaniya_tarifa=self.T + timedelta(days=30))
+        ob2 = Objekt.objects.create(brigada=b2, nazvanie='Чужой', data_nachala=self.T,
+                                    data_okonchania_plan=self.T + timedelta(days=60),
+                                    summa_dogovora=Decimal('100000'))
+        self.Etap.objects.create(objekt=ob2, nazvanie='Чужой этап', plan_objem=Decimal('10'),
+                                 plan_data_nachala=self.T, plan_data_okonchania=self.T)
+        self.assertEqual(self._kalendar()['vsego'], 0)
+
+    def test_schetchik_prosrochennyh(self):
+        from datetime import timedelta
+        vchera = self.T - timedelta(days=1)
+        self._etap(vchera)
+        self._etap(vchera)
+        self._etap(self.T)                      # сегодня — не считается
+        kal = self._kalendar(vchera.year, vchera.month)
+        self.assertEqual(kal['prosrocheno'], 2)
+
+    def test_kalendar_na_stranice(self):
+        self._etap(self.T)
+        self.client.force_login(self.b.user)
+        r = self.client.get(reverse('core:dashboard'))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'Заказ материала')      # легенда
+        self.assertContains(r, 'Зарплата рабочим')
+
+    def test_listanie_mesyacev(self):
+        self.client.force_login(self.b.user)
+        r = self.client.get(reverse('core:dashboard'), {'god': 2026, 'mesyats': 12})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['kalendar']['nazvanie'], 'Декабрь 2026')
+        self.assertEqual(r.context['kalendar']['sled'], {'god': 2027, 'mesyats': 1})
+        self.assertEqual(r.context['kalendar']['pred'], {'god': 2026, 'mesyats': 11})
+
+    def test_musor_v_parametrah_ne_lomaet(self):
+        """Кривые ?god/?mesyats не должны валить дашборд — просто текущий месяц."""
+        self.client.force_login(self.b.user)
+        for params in ({'god': 'abc'}, {'mesyats': '13'}, {'mesyats': '0'}, {'god': '1'}):
+            with self.subTest(params=params):
+                r = self.client.get(reverse('core:dashboard'), params)
+                self.assertEqual(r.status_code, 200)
+
+
 class BrigadaTests(TestCase):
     def test_tarif_label(self):
         u = get_user_model().objects.create_user('bt', password='x')
