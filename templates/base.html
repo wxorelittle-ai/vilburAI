@@ -143,12 +143,12 @@
                брейкпоинтом бокового меню дашборда.
             {% endcomment %}
             <div class="hidden lg:flex items-center gap-1 text-sm">
-                <a href="{% url 'core:dashboard' %}" class="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Кабинет</a>
-                <a href="{% url 'documents:list' %}" class="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Документы</a>
-                <a href="{% url 'calculator:list' %}" class="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Калькулятор</a>
-                <a href="{% url 'smety:list' %}" class="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Сметы</a>
-                <a href="{% url 'objekty:list' %}" class="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Объекты</a>
-                <a href="{% url 'billing:plans' %}" class="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Тарифы</a>
+                <a href="{% url 'core:dashboard' %}" class="px-3 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Кабинет</a>
+                <a href="{% url 'documents:list' %}" class="px-3 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Документы</a>
+                <a href="{% url 'calculator:list' %}" class="px-3 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Калькулятор</a>
+                <a href="{% url 'smety:list' %}" class="px-3 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Сметы</a>
+                <a href="{% url 'objekty:list' %}" class="px-3 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Объекты</a>
+                <a href="{% url 'billing:plans' %}" class="px-3 py-3 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition">Тарифы</a>
             </div>
             <div class="flex items-center gap-2">
                 <button type="button" data-install class="hidden text-sm px-3 py-2 rounded-lg bg-amber/20 text-amber hover:bg-amber/30 transition font-semibold">Установить</button>
@@ -156,7 +156,7 @@
                 <a href="{% url 'core:profile' %}" class="hidden sm:inline text-sm text-white/70 hover:text-amber transition px-2">Профиль</a>
                 <form method="post" action="{% url 'core:logout' %}" class="inline">
                     {% csrf_token %}
-                    <button type="submit" class="text-sm px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition">Выйти</button>
+                    <button type="submit" class="text-sm px-4 py-3 rounded-lg bg-white/10 hover:bg-white/20 transition">Выйти</button>
                 </form>
             </div>
             {% else %}
