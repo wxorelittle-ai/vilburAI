@@ -1,5 +1,10 @@
-{# Плашка одной задачи в дне календаря. Цвет — по виду задачи, но у просроченной
-   всегда терракота. Выполненное зачёркнуто и приглушено. #}
+{% comment %}
+Плашка одной задачи в дне календаря. Цвет — по виду задачи, но у просроченной
+всегда терракота. Выполненное зачёркнуто и приглушено.
+
+ВНИМАНИЕ: только {% comment %}. Многострочный {# ... #} в Django не распознаётся
+и печатается на странице видимым текстом — этот файл уже ловил такое.
+{% endcomment %}
 <a href="{{ s.url }}" title="{{ s.zagolovok }} — {{ s.podzagolovok }}"
    class="block mb-0.5 px-1.5 py-0.5 rounded text-[11px] leading-tight truncate border-l-2 transition hover:opacity-80
     {% if s.cvet == 'red' %}border-l-terracotta bg-[#F7E7E1] text-accent-dark font-semibold

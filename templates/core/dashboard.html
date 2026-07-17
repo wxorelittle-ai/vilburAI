@@ -110,8 +110,10 @@
                                 {% include "core/_kalendar_sobytie.html" %}
                             {% endfor %}
                             {% if den.sobytiya|length > 3 %}
-                            {# «ещё N» раскрывается: все зарплаты месяца падают на одно число,
-                               и без этого 13 задач из 16 были бы недостижимы. #}
+                            {% comment %}
+                               «ещё N» раскрывается: все зарплаты месяца падают на одно число,
+                               и без этого 13 задач из 16 были бы недостижимы.
+                            {% endcomment %}
                             <details>
                                 <summary class="cursor-pointer text-[10px] font-semibold text-steel hover:text-terracotta px-1.5 py-0.5">
                                     ещё {{ den.sobytiya|length|add:"-3" }}

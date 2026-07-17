@@ -76,10 +76,37 @@ class ShablonyNeTekutTests(TestCase):
     распознаётся и выводится на страницу видимым текстом; в шапке он вдобавок стал
     элементом флекса и ломал вёрстку (страница 426px при экране 375).
     Для многострочных — только {% comment %}.
+
+    ВАЖНО, почему тут заводятся объекты: первая версия теста открывала пустой дашборд,
+    а календарь рисуется только `{% if kalendar %}`, то есть при наличии объектов. Из-за
+    этого тест пропустил ровно ту же протечку в core/_kalendar_sobytie.html — комментарий
+    печатался текстом в каждую ячейку календаря. Страница без данных ничего не сторожит:
+    проверять надо ту разметку, которую видит пользователь.
     """
 
-    STRANICY = ['/dashboard/', '/documents/', '/smety/', '/objekty/', '/billing/',
-                '/nalogi/', '/proverka/', '/market/', '/profile/']
+    STRANICY = ['/dashboard/', '/documents/', '/smety/', '/objekty/', '/objekty/postavki/',
+                '/billing/', '/nalogi/', '/proverka/', '/market/', '/profile/']
+
+    def setUp(self):
+        from datetime import timedelta
+        from decimal import Decimal
+        from objekty.models import Objekt, EtapGrafika, Material, DvizhenieDeneg, OplataMontajnika
+        T = timezone.localdate()
+        # владельца заводит авто-вход, поэтому объекты цепляем к нему же
+        self.client.get('/dashboard/')
+        b = get_user_model().objects.get(username='vladelec').brigada
+        ob = Objekt.objects.create(brigada=b, nazvanie='Объект', data_nachala=T,
+                                   data_okonchania_plan=T + timedelta(days=60),
+                                   summa_dogovora=Decimal('500000'))
+        e = EtapGrafika.objects.create(objekt=ob, nazvanie='Стяжка', plan_objem=Decimal('10'),
+                                       plan_data_nachala=T, plan_data_okonchania=T)
+        Material.objects.create(objekt=ob, etap=e, nazvanie='Плитка', srok_proizvodstva_dney=5,
+                                srok_dostavki_dney=3, bufer_dney=2)
+        DvizhenieDeneg.objects.create(objekt=ob, osnovanie='Аванс', summa_nachislenie=Decimal('50000'),
+                                      data_plan=T)
+        OplataMontajnika.objects.create(objekt=ob, montajnik_fio='Петров', rascenka=Decimal('300'),
+                                        mesyats=(T.replace(day=1) - timedelta(days=1)).replace(day=1),
+                                        plan_objem_mesyats=Decimal('100'), fact_objem_mesyats=Decimal('100'))
 
     def test_net_syrogo_sintaksisa_shablonov(self):
         # Только {# и {% : `}}` и `{{` дают ложные срабатывания на инлайновом JS
@@ -90,6 +117,31 @@ class ShablonyNeTekutTests(TestCase):
                 for marker in ('{#', '{%'):
                     self.assertNotIn(marker, html,
                                      f'на {url} в HTML протёк шаблонный тег {marker}')
+
+    def test_kalendar_dejstvitelno_narisovan(self):
+        """Страховка от того, что первый тест снова начнёт сторожить пустоту."""
+        html = self.client.get('/dashboard/').content.decode()
+        self.assertIn('Зарплата рабочим', html, 'календарь не отрисовался — проверять нечего')
+        self.assertIn('Сдать: Стяжка', html)
+
+    def test_ni_v_odnom_shablone_net_mnogostrochnyh_reshyotochnyh_kommentariev(self):
+        """Проверка исходников, а не отрисовки.
+
+        Проверка через HTML ловит протечку только в той ветке, которая отрисовалась на
+        тестовых данных. Так уже дважды пропускали: комментарий в календаре виден лишь
+        при наличии объектов, а комментарий в «ещё N» — лишь когда задач в дне больше
+        трёх. Здесь ветки не важны: читаем сами файлы.
+        """
+        from pathlib import Path
+        from django.conf import settings
+
+        bity = []
+        for shablon in Path(settings.BASE_DIR, 'templates').rglob('*.html'):
+            for nomer, stroka in enumerate(shablon.read_text(encoding='utf-8').splitlines(), 1):
+                if '{#' in stroka and '#}' not in stroka:
+                    bity.append(f'{shablon.relative_to(settings.BASE_DIR)}:{nomer}')
+        self.assertEqual(bity, [], 'многострочный {# #} не комментарий, а видимый текст на '
+                                   'странице — используйте {% comment %}. Найдено: ' + ', '.join(bity))
 
 
 class KalendarTests(TestCase):
