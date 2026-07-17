@@ -407,8 +407,11 @@ class Command(BaseCommand):
                     data_zakaza_fakt=T - timedelta(days=random.randint(1, 20)),
                 )
 
-        # Оплата монтажникам (2-3 записи)
+        # Оплата монтажникам. Нужен и прошлый месяц: зарплата за месяц выплачивается 10-го
+        # числа СЛЕДУЮЩЕГО, поэтому без записей за прошлый месяц в календаре текущего не было
+        # бы ни одной зарплаты — категория выглядела бы нерабочей.
         mesyats1 = T.replace(day=1)
+        mesyats0 = (mesyats1 - timedelta(days=1)).replace(day=1)      # прошлый месяц
         for j in range(random.randint(2, 3)):
             plan_v = Decimal(random.randint(40, 120))
             if scenario == 'overpay' and j == 0:
@@ -423,6 +426,19 @@ class Command(BaseCommand):
                 mesyats=mesyats1, plan_objem_mesyats=plan_v, fact_objem_mesyats=fact_v,
                 oplacheno_sverh_grafika=sverh,
                 summa_oplacheno=(min(fact_v, plan_v) * rasc) * Decimal(random.choice(['0.5', '0.7', '1.0'])),
+            )
+
+        # Прошлый месяц: часть выплачена полностью, часть ещё висит — чтобы в календаре
+        # текущего месяца были и зелёные зарплаты, и красные (если 10-е число уже прошло).
+        for _ in range(random.randint(1, 2)):
+            plan_v = Decimal(random.randint(40, 120))
+            fact_v = plan_v * Decimal(random.choice(['0.8', '1.0']))
+            rasc = Decimal(random.randint(280, 420))
+            k_oplate = min(fact_v, plan_v) * rasc
+            OplataMontajnika.objects.create(
+                objekt=ob, montajnik_fio=random.choice(MONTAJNIKI), rascenka=rasc,
+                mesyats=mesyats0, plan_objem_mesyats=plan_v, fact_objem_mesyats=fact_v,
+                summa_oplacheno=k_oplate * Decimal(random.choice(['0', '0.5', '1.0'])),
             )
 
         # Расходы (1-2 месяца)
