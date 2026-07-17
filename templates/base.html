@@ -159,7 +159,16 @@
                + «Установить» + тема + бургер + выход не влезают в 375px и шапка рвётся.
             {% endcomment %}
             <div class="flex items-center gap-2">
-                <button type="button" data-install class="hidden text-sm px-3 py-2 rounded-lg bg-amber/20 text-amber hover:bg-amber/30 transition font-semibold">Установить</button>
+                {% comment %}
+                   На телефоне — только значок: с полной подписью логотип + «Установить» +
+                   тема + бургер дают 388px при экране 375, и шапка уезжает. Прятать кнопку
+                   нельзя — установка на домашний экран нужнее всего как раз на телефоне.
+                   Класс hidden снимает JS по beforeinstallprompt (static/js/app.js).
+                {% endcomment %}
+                <button type="button" data-install aria-label="Установить приложение"
+                        class="hidden text-sm px-3 py-2 min-h-[44px] rounded-lg bg-amber/20 text-amber hover:bg-amber/30 transition font-semibold">
+                    <span class="sm:hidden">⬇</span><span class="hidden sm:inline">Установить</span>
+                </button>
                 <button type="button" data-theme-toggle class="w-11 h-11 rounded-lg bg-white/10 hover:bg-white/20 transition text-base leading-none" aria-label="Тёмная тема">☾</button>
                 <a href="{% url 'core:profile' %}" class="hidden lg:inline text-sm text-white/70 hover:text-amber transition px-2">Профиль</a>
                 <form method="post" action="{% url 'core:logout' %}" class="hidden lg:inline">
@@ -171,7 +180,16 @@
             {% else %}
             <div class="flex items-center gap-2 sm:gap-3">
                 <a href="{% url 'marketplace:katalog' %}" class="hidden sm:inline text-sm text-white/80 hover:text-amber transition px-2">Найти бригаду</a>
-                <button type="button" data-install class="hidden text-sm px-3 py-2 rounded-lg bg-amber/20 text-amber hover:bg-amber/30 transition font-semibold">Установить</button>
+                {% comment %}
+                   На телефоне — только значок: с полной подписью логотип + «Установить» +
+                   тема + бургер дают 388px при экране 375, и шапка уезжает. Прятать кнопку
+                   нельзя — установка на домашний экран нужнее всего как раз на телефоне.
+                   Класс hidden снимает JS по beforeinstallprompt (static/js/app.js).
+                {% endcomment %}
+                <button type="button" data-install aria-label="Установить приложение"
+                        class="hidden text-sm px-3 py-2 min-h-[44px] rounded-lg bg-amber/20 text-amber hover:bg-amber/30 transition font-semibold">
+                    <span class="sm:hidden">⬇</span><span class="hidden sm:inline">Установить</span>
+                </button>
                 <button type="button" data-theme-toggle class="w-11 h-11 rounded-lg bg-white/10 hover:bg-white/20 transition text-base leading-none" aria-label="Тёмная тема">☾</button>
                 <a href="{% url 'core:login' %}" class="text-sm text-white/80 hover:text-amber transition px-2">Войти</a>
                 {% comment %}
