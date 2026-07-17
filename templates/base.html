@@ -65,6 +65,28 @@
         .u-lift { transition: transform .18s ease, box-shadow .18s ease; }
         .u-lift:hover { transform: translateY(-3px); }
 
+        /* Зоны нажатия: Material требует минимум 48dp даже у мелких иконок — добираем
+           невидимой областью вокруг, не раздувая саму кнопку.
+           https://m3.material.io/foundations/designing/structure */
+        .u-tap { position: relative; }
+        .u-tap::after {
+            content: ''; position: absolute; left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 48px; min-height: 48px; width: 100%; height: 100%;
+        }
+
+        /* «Уменьшенное движение» — системная настройка доступности: убираем анимации,
+           иначе подъём карточек и переходы укачивают тех, кто их отключил. */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .01ms !important;
+                scroll-behavior: auto !important;
+            }
+            .u-lift:hover { transform: none; }
+        }
+
         /* Плашка-«кирпич» логотипа */
         .brandmark {
             display:inline-flex; align-items:center; justify-content:center;
@@ -108,7 +130,7 @@
     <nav class="bg-grafit text-white sticky top-0 z-40 shadow-lift">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
             <a href="{% url 'core:landing' %}" class="flex items-center gap-2.5 shrink-0">
-                <img src="{% static 'img/wilbur-horse-white.png' %}" alt="Вильбур" class="h-9 w-auto">
+                <img src="{% static 'img/wilbur-horse-white.png' %}" alt="Вильбур" width="40" height="36" class="h-9 w-auto">
                 <span class="text-lg font-display font-extrabold tracking-tight">
                     Вильбур<span class="text-amber"> AI</span>
                 </span>
@@ -130,7 +152,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <button type="button" data-install class="hidden text-sm px-3 py-2 rounded-lg bg-amber/20 text-amber hover:bg-amber/30 transition font-semibold">Установить</button>
-                <button type="button" data-theme-toggle class="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 transition text-base leading-none" aria-label="Тёмная тема">☾</button>
+                <button type="button" data-theme-toggle class="w-11 h-11 rounded-lg bg-white/10 hover:bg-white/20 transition text-base leading-none" aria-label="Тёмная тема">☾</button>
                 <a href="{% url 'core:profile' %}" class="hidden sm:inline text-sm text-white/70 hover:text-amber transition px-2">Профиль</a>
                 <form method="post" action="{% url 'core:logout' %}" class="inline">
                     {% csrf_token %}
@@ -141,7 +163,7 @@
             <div class="flex items-center gap-2 sm:gap-3">
                 <a href="{% url 'marketplace:katalog' %}" class="hidden sm:inline text-sm text-white/80 hover:text-amber transition px-2">Найти бригаду</a>
                 <button type="button" data-install class="hidden text-sm px-3 py-2 rounded-lg bg-amber/20 text-amber hover:bg-amber/30 transition font-semibold">Установить</button>
-                <button type="button" data-theme-toggle class="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 transition text-base leading-none" aria-label="Тёмная тема">☾</button>
+                <button type="button" data-theme-toggle class="w-11 h-11 rounded-lg bg-white/10 hover:bg-white/20 transition text-base leading-none" aria-label="Тёмная тема">☾</button>
                 <a href="{% url 'core:login' %}" class="text-sm text-white/80 hover:text-amber transition px-2">Войти</a>
                 {% comment %}
                    На узком экране длинная надпись не влезала: логотип + кнопки давали 409px
@@ -182,7 +204,7 @@
     <footer class="mt-20 border-t border-sand-deep bg-grafit text-white/60">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
             <div class="flex items-center gap-2.5">
-                <img src="{% static 'img/wilbur-horse-white.png' %}" alt="Вильбур" class="h-7 w-auto opacity-90">
+                <img src="{% static 'img/wilbur-horse-white.png' %}" alt="Вильбур" width="31" height="28" class="h-7 w-auto opacity-90">
                 <span class="font-display font-bold text-white/90">Вильбур<span class="text-amber"> AI</span></span>
             </div>
             <p>© {% now "Y" %} — защити свою бригаду: договоры, сметы, расчёты за 3 минуты с телефона</p>

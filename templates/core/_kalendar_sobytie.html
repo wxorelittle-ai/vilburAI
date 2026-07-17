@@ -2,11 +2,16 @@
 Плашка одной задачи в дне календаря. Цвет — по виду задачи, но у просроченной
 всегда терракота. Выполненное зачёркнуто и приглушено.
 
+Размер: 32px на телефоне, 22px от sm. Material требует 48dp на нажимаемый элемент,
+но здесь это неприменимо: день с тремя задачами стал бы выше 150px, и месяц перестал
+бы помещаться на экран — сам Google Calendar в сетке месяца тоже держит плашки ~22px.
+Компромисс: на телефоне (где палец) плашка 32px, на десктопе (где мышь) — плотная.
+
 ВНИМАНИЕ: только {% comment %}. Многострочный {# ... #} в Django не распознаётся
 и печатается на странице видимым текстом — этот файл уже ловил такое.
 {% endcomment %}
 <a href="{{ s.url }}" title="{{ s.zagolovok }} — {{ s.podzagolovok }}"
-   class="block mb-0.5 px-1.5 py-0.5 rounded text-[11px] leading-tight truncate border-l-2 transition hover:opacity-80
+   class="flex items-center mb-0.5 px-1.5 min-h-[32px] sm:min-h-[22px] rounded text-xs leading-tight truncate border-l-2 transition hover:opacity-80
     {% if s.cvet == 'red' %}border-l-terracotta bg-[#F7E7E1] text-accent-dark font-semibold
     {% elif s.cvet == 'amber' %}border-l-amber bg-[#FBF3E5] text-[#7A5A2E]
     {% elif s.cvet == 'blue' %}border-l-[#5B7DA6] bg-[#E8EEF5] text-[#41618A]

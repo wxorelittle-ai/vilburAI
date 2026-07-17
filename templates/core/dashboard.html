@@ -64,13 +64,13 @@
                 </div>
                 <div class="flex items-center gap-1">
                     <a href="?god={{ kalendar.pred.god }}&mesyats={{ kalendar.pred.mesyats }}"
-                       class="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-sand-deep bg-white text-steel hover:text-terracotta hover:border-terracotta transition"
+                       class="u-tap w-11 h-11 inline-flex items-center justify-center rounded-lg border border-sand-deep bg-white text-steel hover:text-terracotta hover:border-terracotta transition"
                        aria-label="Предыдущий месяц">←</a>
                     {% if not kalendar.tekushchiy %}
                     <a href="{% url 'core:dashboard' %}" class="text-xs font-semibold text-steel hover:text-terracotta px-2">Сегодня</a>
                     {% endif %}
                     <a href="?god={{ kalendar.sled.god }}&mesyats={{ kalendar.sled.mesyats }}"
-                       class="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-sand-deep bg-white text-steel hover:text-terracotta hover:border-terracotta transition"
+                       class="u-tap w-11 h-11 inline-flex items-center justify-center rounded-lg border border-sand-deep bg-white text-steel hover:text-terracotta hover:border-terracotta transition"
                        aria-label="Следующий месяц">→</a>
                 </div>
             </div>
@@ -102,8 +102,13 @@
                         <div class="min-h-[92px] p-1.5 border-r border-sand-deep last:border-r-0
                             {% if not den.v_mesyatse %}bg-sand/40{% endif %}">
                             <div class="flex items-center justify-between mb-1">
+                                {% comment %}
+                                   text-steel/40 давал контраст 1.78 при норме 3:1 — числа
+                                   соседних месяцев были почти не читаемы. Приглушаем фоном
+                                   ячейки, а не прозрачностью текста.
+                                {% endcomment %}
                                 <span class="text-xs font-bold w-6 h-6 inline-flex items-center justify-center rounded-full
-                                    {% if den.segodnya %}bg-grafit text-white{% elif not den.v_mesyatse %}text-steel/40{% else %}text-steel{% endif %}">{{ den.den }}</span>
+                                    {% if den.segodnya %}bg-grafit text-white{% elif not den.v_mesyatse %}text-steel/70{% else %}text-steel{% endif %}">{{ den.den }}</span>
                                 {% if den.prosrocheno %}<span class="w-1.5 h-1.5 rounded-full bg-terracotta"></span>{% endif %}
                             </div>
                             {% for s in den.sobytiya|slice:":3" %}
@@ -115,7 +120,7 @@
                                и без этого 13 задач из 16 были бы недостижимы.
                             {% endcomment %}
                             <details>
-                                <summary class="cursor-pointer text-[10px] font-semibold text-steel hover:text-terracotta px-1.5 py-0.5">
+                                <summary class="cursor-pointer text-xs font-semibold text-steel hover:text-terracotta px-1.5 min-h-[32px] sm:min-h-[22px] flex items-center">
                                     ещё {{ den.sobytiya|length|add:"-3" }}
                                 </summary>
                                 {% for s in den.sobytiya|slice:"3:" %}
